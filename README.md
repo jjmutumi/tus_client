@@ -7,3 +7,18 @@ A TUS client for dart. Translation of the [tus-java-client](https://github.com/t
 > re-uploading the previous data again. An interruption may happen willingly, if
 > the user wants to pause, or by accident in case of a network issue or server
 > outage.
+
+## Using it
+
+```dart
+final tusClient = TusClient(
+    Uri.parse("https://example.com/tus"),
+    urlStore: TusURLMemoryStore(),
+);
+
+final upload = TusUpload();
+final file = File("/my/pic.jpg");
+await upload.initialize(file);
+final executor = TusMainExecutor();
+await executor.makeAttempts();
+```

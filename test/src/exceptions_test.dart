@@ -24,11 +24,11 @@ main() {
   });
 
   test("exceptions_test.ProtocolException", () {
-    final err = ProtocolException("Expected HEADER 'TUS_VERSION'");
+    final err = ProtocolException("Expected HEADER 'Tus-Resumable'");
     expect(
         "$err",
         "ProtocolException: "
-            "Expected HEADER 'TUS_VERSION'");
+            "Expected HEADER 'Tus-Resumable'");
     expect(err.shouldRetry(), false);
   });
 
@@ -36,11 +36,11 @@ main() {
     final response = MockResponse();
     when(response.statusCode).thenReturn(506);
 
-    final err = ProtocolException("Expected HEADER 'TUS_VERSION'", response);
+    final err = ProtocolException("Expected HEADER 'Tus-Resumable'", response);
     expect(
         "$err",
         "ProtocolException: "
-            "Expected HEADER 'TUS_VERSION'");
+            "Expected HEADER 'Tus-Resumable'");
     expect(err.shouldRetry(), true);
   });
 
@@ -48,11 +48,11 @@ main() {
     final response = MockResponse();
     when(response.statusCode).thenReturn(401);
 
-    final err = ProtocolException("Expected HEADER 'TUS_VERSION'", response);
+    final err = ProtocolException("Expected HEADER 'Tus-Resumable'", response);
     expect(
         "$err",
         "ProtocolException: "
-            "Expected HEADER 'TUS_VERSION'");
+            "Expected HEADER 'Tus-Resumable'");
     expect(err.shouldRetry(), false);
   });
 }

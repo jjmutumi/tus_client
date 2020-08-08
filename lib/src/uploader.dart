@@ -72,15 +72,15 @@ class TusUploader {
     _httpRequest.headers.add("Expect", "100-continue");
   }
 
-  /// Upload a part of the file by reading a chunk from the [TusUpload.file] and 
+  /// Upload a part of the file by reading a chunk from the [TusUpload.file] and
   /// writing it to [uploadURL] returning `true` if there are no more available
   /// bytes for upload.
   ///
-  /// No new connection will be established when calling this method, instead 
+  /// No new connection will be established when calling this method, instead
   /// the connection opened in the previous calls will be used.
   ///
   /// In order to obtain the new offset, use [offset] after this method returns.
-  /// 
+  ///
   /// Throws [Exception]
   Future<bool> uploadChunk() async {
     _openConnection();
@@ -88,9 +88,9 @@ class TusUploader {
     int bytesToRead = min(payloadSize, _bytesRemainingForRequest);
     final buffer = Uint8List(bytesToRead);
 
+    final bytesRead = await upload.readInto(buffer, offset);
     // Do not write the entire buffer to the stream
-    final bytesRead = await upload.file.readInto(buffer, offset, bytesToRead);
-    _httpRequest.add(buffer);
+    _httpRequest.add(buffer.sublist(0, bytesRead));
 
     offset += bytesRead;
     _bytesRemainingForRequest -= bytesRead;
@@ -104,10 +104,10 @@ class TusUploader {
   }
 
   /// Finish the request and free up resources.
-  /// 
+  ///
   /// You can call this method even before the entire file has been uploaded.
   /// Use this behavior to enable pausing uploads.
-  /// 
+  ///
   /// Throws [ProtocolException] or [Exception]
   Future<void> finish() async {
     await _finishConnection();
@@ -117,7 +117,7 @@ class TusUploader {
 
     // Close the file after checking the response to ensure
     // that we will not need to read from it again in the future.
-    upload.file.close();
+    // upload.file.close();
   }
 
   Future<void> _finishConnection() async {

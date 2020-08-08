@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'client.dart';
 import 'dart:convert' show utf8, base64;
 import 'dart:io';
@@ -8,9 +10,9 @@ import "package:path/path.dart" as p;
 /// Uploading is done using [TusUploader] returned by
 /// [TusClient.createUpload], [TusClient.createUpload] and
 /// [TusClient.resumeOrCreateUpload].
-/// 
+///
 /// Object must be initialized before being used:
-/// 
+///
 ///     File file;
 ///     final upload = TusUpload();
 ///     await upload.initialize(file);
@@ -20,22 +22,34 @@ class TusUpload {
 
   String _fingerprint;
 
-  RandomAccessFile file;
+  File _file;
+
   Map<String, String> _metadata;
 
   /// Initialize [TusUpload] with [file] whose content should be later uploaded.
   /// [size] and [fingerprint] will be automatically set.
-  initialize(File file) async {
-    this.file = await file.open(mode: FileMode.read);
+  initialize(File file, {Map<String, String> metadata}) async {
+    this._file = file;
     _size = await file.length();
-    _fingerprint = "${file.path}-$_size";
-    _metadata = {};
+    final path = file.absolute.path.replaceAll(RegExp(r"\W+"), '.');
+    _fingerprint = "$path-$_size";
+    _metadata = metadata ?? {};
     _metadata["filename"] = p.basename(file.path);
   }
 
   int get size => _size;
 
   String get fingerprint => _fingerprint;
+
+  /// Reads [Uint8List.length] bytes of [buffer] from [_file] into [buffer]
+  /// starting at [offset] returning the actual number of bytes read
+  Future<int> readInto(Uint8List buffer, int offset) async {
+    final f = await _file.open(mode: FileMode.read);
+    await f.setPosition(offset);
+    final bytesRead = await f.readInto(buffer);
+    await f.close();
+    return bytesRead;
+  }
 
   /// Encode the metadata into a string according to the specification, so it
   /// can be used as the value for the Upload-Metadata header.

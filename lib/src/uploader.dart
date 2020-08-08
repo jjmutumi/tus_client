@@ -65,8 +65,8 @@ class TusUploader {
 
     _bytesRemainingForRequest = payloadSize;
 
-    final httpClient = HttpClient();
-    _httpRequest = await httpClient.patchUrl(uploadURL);
+    final hClient = httpClient();
+    _httpRequest = await hClient.patchUrl(uploadURL);
     _httpRequest.headers.add("Upload-Offset", offset.toString());
     _httpRequest.headers.add("Content-Type", "application/offset+octet-stream");
     _httpRequest.headers.add("Expect", "100-continue");
@@ -83,7 +83,7 @@ class TusUploader {
   ///
   /// Throws [Exception]
   Future<bool> uploadChunk() async {
-    _openConnection();
+    await _openConnection();
 
     int bytesToRead = min(payloadSize, _bytesRemainingForRequest);
     final buffer = Uint8List(bytesToRead);
@@ -147,4 +147,6 @@ class TusUploader {
       _httpRequest = null;
     }
   }
+
+  HttpClient httpClient() => HttpClient();
 }

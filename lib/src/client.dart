@@ -45,7 +45,7 @@ class TusClient {
   ///
   /// Throws [ProtocolException] or [Exception]
   Future<TusUploader> createUpload(TusUpload upload) async {
-    HttpClient client = HttpClient();
+    final client = httpClient();
     client.connectionTimeout = Duration(milliseconds: connectTimeout);
     final request = await client.postUrl(uploadCreationURL);
     _addHeaders(request);
@@ -71,7 +71,7 @@ class TusClient {
           "missing upload Uri in response for creating upload", response);
     }
 
-    // The upload Uri must be relative to the Uri of the response by which is 
+    // The upload Uri must be relative to the Uri of the response by which is
     // was returned, not the upload creation Uri. In most cases, there is no
     // difference between those two but there may be cases in which the POST
     // request is redirected.
@@ -116,7 +116,7 @@ class TusClient {
   /// or [ProtocolException] or [Exception]
   Future<TusUploader> beginOrResumeUploadFromURL(
       TusUpload upload, Uri uploadURL) async {
-    HttpClient client = HttpClient();
+    final client = httpClient();
     client.connectionTimeout = Duration(milliseconds: connectTimeout);
     final request = await client.headUrl(uploadCreationURL);
     _addHeaders(request);
@@ -182,4 +182,6 @@ class TusClient {
       urlStore.remove(upload.fingerprint);
     }
   }
+
+  HttpClient httpClient() => HttpClient();
 }

@@ -1,11 +1,14 @@
-// import 'client.dart';
+import 'client.dart';
 import 'exceptions.dart';
 import 'uploader.dart';
 
-/// TusExecutor is a wrapper class which you can build around your uploading mechanism and any
-/// exception thrown by it will be caught and may result in a retry. This way you can easily add
-/// retrying functionality to your application with defined delays between them.
-/// This can be achieved by extending TusExecutor and implementing the abstract makeAttempt() method:
+/// TusExecutor is a wrapper class which you can build around your uploading 
+/// mechanism and any exception thrown by it will be caught and may result in 
+/// a retry. This way you can easily add retrying functionality to your 
+/// application with defined delays between them.
+/// 
+/// This can be achieved by extending TusExecutor and implementing the abstract
+/// makeAttempt() method:
 ///
 ///     class MyExecutor extends TusExecutor {
 ///         @override
@@ -18,17 +21,17 @@ import 'uploader.dart';
 ///     final executor = MyExecutor();
 ///     await executor.makeAttempts();
 ///
-/// The retries are basically just calling the [makeAttempt()] method which should then
-/// retrieve an [TusUploader] using [TusClient.resumeOrCreateUpload()] and then
-/// invoke [TusUploader.uploadChunk()] as int as possible without catching
+/// The retries are basically just calling the [makeAttempt] method which 
+/// should then retrieve an [TusUploader] using [TusClient.resumeOrCreateUpload]
+/// and then invoke [TusUploader.uploadChunk] without catching
 /// [ProtocolException] or [Exception] as this is taken over by this class.
 abstract class TusExecutor {
   /// Delays in milliseconds
   List<int> delays = [500, 1000, 2000, 3000];
 
-  /// This method is basically just calling the [makeAttempt()] which should then
-  /// retrieve an [TusUploader] using [TusClient.resumeOrCreateUpload()] and then
-  /// invoke[TusUploader.uploadChunk()]
+  /// This method is basically just calling the [makeAttempt] which should then
+  /// retrieve an [TusUploader] using [TusClient.resumeOrCreateUpload] and then
+  /// invoke[TusUploader.uploadChunk]
   /// Throws [ProtocolException] [IOException]
   Future<bool> makeAttempts() async {
     int attempt = -1;
@@ -61,4 +64,13 @@ abstract class TusExecutor {
   /// This method must be implemented by the specific caller. It will be invoked once or multiple
   /// times
   Future<void> makeAttempt();
+}
+
+class TusMainExecutor extends TusExecutor {
+  @override
+  Future<void> makeAttempt() {
+    // TODO: implement makeAttempt
+    throw UnimplementedError();
+  }
+  
 }

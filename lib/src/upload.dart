@@ -1,11 +1,19 @@
+import 'client.dart';
 import 'dart:convert' show utf8, base64;
 import 'dart:io';
+import 'uploader.dart';
 import "package:path/path.dart" as p;
 
-/// This class contains information about a file which will be uploaded later. Uploading is not
-/// done using this class but using [TusUploader] whose instances are returned by
-/// [TusClient.createUpload] [TusClient.createUpload] and
+/// This class contains information about a file which will be uploaded later.
+/// Uploading is done using [TusUploader] returned by
+/// [TusClient.createUpload], [TusClient.createUpload] and
 /// [TusClient.resumeOrCreateUpload].
+/// 
+/// Object must be initialized before being used:
+/// 
+///     File file;
+///     final upload = TusUpload();
+///     await upload.initialize(file);
 class TusUpload {
   /// File's size in bytes.
   int _size;
@@ -29,8 +37,8 @@ class TusUpload {
 
   String get fingerprint => _fingerprint;
 
-  /// Encode the metadata into a string according to the specification, so it can be
-  /// used as the value for the Upload-Metadata header.
+  /// Encode the metadata into a string according to the specification, so it
+  /// can be used as the value for the Upload-Metadata header.
   String get metadata {
     if (_metadata == null || _metadata.isEmpty) {
       return "";

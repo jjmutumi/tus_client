@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import "package:path/path.dart" as p;
 import 'upload.dart';
 
 /// Implementations of this interface are used to lookup a
@@ -52,21 +55,38 @@ class TusURLMemoryStore implements TusURLStore {
 /// This store **will** keep the values after your application crashes or
 /// restarts.
 class TusURLFileStore implements TusURLStore {
+  final Directory directory;
+
+  TusURLFileStore(this.directory);
+
   @override
-  Future<Uri> get(String fingerprint) {
-    // TODO: implement get
-    throw UnimplementedError();
+  Future<void> set(String fingerprint, Uri url) async {
+    final file = await _getFile(fingerprint);
+    await file.writeAsString(url.toString());
   }
 
   @override
-  Future<void> remove(String fingerprint) {
-    // TODO: implement remove
-    throw UnimplementedError();
+  Future<Uri> get(String fingerprint) async {
+    final file = await _getFile(fingerprint);
+    if (await file.exists()) {
+      return Uri.parse(await file.readAsString());
+    }
+    return null;
   }
 
   @override
-  Future<void> set(String fingerprint, Uri url) {
-    // TODO: implement set
-    throw UnimplementedError();
+  Future<void> remove(String fingerprint) async {
+    final file = await _getFile(fingerprint);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
+  Future<File> _getFile(fingerprint) async {
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    final filePath = p.join(directory.absolute.path, fingerprint);
+    return File(filePath);
   }
 }

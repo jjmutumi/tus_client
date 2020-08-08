@@ -7,7 +7,7 @@ import 'url_store.dart';
 /// This class is used for creating or resuming uploads.
 class TusClient {
   /// Version of the tus protocol used by the client. The remote server needs to
-  ///  support this version, too.
+  /// support this version, too.
   static final tusVersion = "1.0.0";
 
   /// The tus server Uri
@@ -71,9 +71,10 @@ class TusClient {
           "missing upload Uri in response for creating upload", response);
     }
 
-    // The upload Uri must be relative to the Uri of the response by which is was returned,
-    // not the upload creation Uri. In most cases, there is no difference between those two
-    // but there may be cases in which the POST request is redirected.
+    // The upload Uri must be relative to the Uri of the response by which is 
+    // was returned, not the upload creation Uri. In most cases, there is no
+    // difference between those two but there may be cases in which the POST
+    // request is redirected.
     Uri uploadURL = response.redirects.last.location.replace(path: urlStr);
 
     if (resumingEnabled) {
@@ -152,8 +153,8 @@ class TusClient {
       } else if (err is ResumingNotEnabledException) {
         return await createUpload(upload);
       } else if (err is ProtocolException) {
-        // If the attempt to resume returned a 404 Not Found, we immediately try to create a new
-        // one since TusExectuor would not retry this operation.
+        // If the attempt to resume returned a 404 Not Found, we immediately try
+        // to create a new  one since TusExecutor would not retry this operation
         if (err.response != null && err.response.statusCode == 404) {
           return await createUpload(upload);
         }

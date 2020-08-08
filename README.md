@@ -8,7 +8,15 @@ A TUS client for dart. Translation of the [tus-java-client](https://github.com/t
 > the user wants to pause, or by accident in case of a network issue or server
 > outage.
 
-## Using it
+## Installing
+
+Add to pubspec.yaml
+```yaml
+dependencies:
+  tus: ^0.0.1
+```
+
+## Usage
 
 ```dart
 final tusClient = TusClient(
@@ -16,9 +24,15 @@ final tusClient = TusClient(
     urlStore: TusURLMemoryStore(),
 );
 
-final upload = TusUpload();
 final file = File("/my/pic.jpg");
+
+final upload = TusUpload();
 await upload.initialize(file);
-final executor = TusMainExecutor();
-await executor.makeAttempts();
+
+final executor = TusMainExecutor(
+    client,
+    onComplete: (upload) {},
+    onProgress: (upload, progress) {},
+);
+await executor.makeAttempts(upload);
 ```

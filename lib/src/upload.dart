@@ -1,8 +1,8 @@
+import 'dart:convert' show utf8, base64;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'client.dart';
-import 'dart:convert' show utf8, base64;
-import 'dart:io';
 import 'uploader.dart';
 import "package:path/path.dart" as p;
 

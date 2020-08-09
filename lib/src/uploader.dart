@@ -63,7 +63,7 @@ class TusUploader {
       return;
     }
 
-    _bytesRemainingForRequest = payloadSize;
+    _bytesRemainingForRequest = upload.size;
 
     final hClient = httpClient();
     _httpRequest = await hClient.patchUrl(uploadURL);

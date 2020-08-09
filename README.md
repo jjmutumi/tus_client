@@ -8,18 +8,25 @@ A TUS client for dart. Translation of the [tus-java-client](https://github.com/t
 > the user wants to pause, or by accident in case of a network issue or server
 > outage.
 
+- [tus_client](#tus_client)
+  - [Installing](#installing)
+  - [Usage](#usage)
+    - [Using Persistent URL Store](#using-persistent-url-store)
+    - [Adding Extra Headers](#adding-extra-headers)
+
 ## Installing
 
 Add to pubspec.yaml
 ```yaml
 dependencies:
+  # ...
   tus: ^0.0.1
 ```
 
 ## Usage
 
 ```dart
-final tusClient = TusClient(
+final client = TusClient(
     Uri.parse("https://example.com/tus"),
     urlStore: TusURLMemoryStore(),
 );
@@ -31,8 +38,38 @@ await upload.initialize(file);
 
 final executor = TusMainExecutor(
     client,
-    onComplete: (upload) {},
-    onProgress: (upload, progress) {},
+    onComplete: (upload) {
+      print("Complete!");
+    },
+    onProgress: (upload, progress) {
+      print("Progress: $progress");
+    },
 );
 await executor.makeAttempts(upload);
+```
+
+### Using Persistent URL Store
+
+```dart
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+
+final tempPath = (await getTemporaryDirectory()).path;
+final tempDirectory = Directory(p.join(tempDir, "tus-uploads"));
+
+final client = TusClient(
+    Uri.parse("https://example.com/tus"),
+    urlStore: TusURLFileStore(tempDirectory),
+);
+```
+
+### Adding Extra Headers
+
+```dart
+final client = TusClient(
+    Uri.parse("https://example.com/tus"),
+    urlStore: TusURLMemoryStore(),
+    headers:{"Authorization": "..."},
+);
 ```

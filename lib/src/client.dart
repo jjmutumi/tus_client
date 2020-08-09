@@ -148,16 +148,10 @@ class TusClient {
     try {
       return await resumeUpload(upload);
     } catch (err) {
-      if (err is FingerprintNotFoundException) {
+      if (err is FingerprintNotFoundException ||
+          err is ResumingNotEnabledException ||
+          (err is ProtocolException && err.response?.statusCode == 404)) {
         return await createUpload(upload);
-      } else if (err is ResumingNotEnabledException) {
-        return await createUpload(upload);
-      } else if (err is ProtocolException) {
-        // If the attempt to resume returned a 404 Not Found, we immediately try
-        // to create a new  one since TusExecutor would not retry this operation
-        if (err.response != null && err.response.statusCode == 404) {
-          return await createUpload(upload);
-        }
       }
       throw err;
     }

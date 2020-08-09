@@ -55,7 +55,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-final tempPath = (await getTemporaryDirectory()).path;
+final tempDir = (await getTemporaryDirectory()).path;
 final tempDirectory = Directory(p.join(tempDir, "tus-uploads"));
 
 final client = TusClient(

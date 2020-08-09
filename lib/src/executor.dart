@@ -94,7 +94,7 @@ class TusMainExecutor extends TusExecutor {
       int totalBytes = upload.size;
       int bytesUploaded = uploader.offset;
       double progress = bytesUploaded / totalBytes * 100;
-      if (onProgress == null) {
+      if (onProgress != null) {
         onProgress(upload, progress);
       }
     } while (!await uploader.uploadChunk());
@@ -102,7 +102,7 @@ class TusMainExecutor extends TusExecutor {
     // Allow cleaned up
     uploader.finish();
 
-    if (onComplete == null) {
+    if (onComplete != null) {
       onComplete(upload);
     }
   }

@@ -45,16 +45,16 @@ abstract class TusExecutor {
         // Returning true is the signal that the makeAttempt() function exited without
         // throwing an error.
         return true;
-      } catch (err) {
+      } catch (err, trace) {
         // Do not attempt a retry, if the Exception suggests so.
         if (err is ProtocolException && !err.shouldRetry()) {
-          throw err;
+          rethrow;
         }
 
         if (attempt >= delays.length) {
           // We exceeds the number of maximum retries. In this case the latest exception
           // is thrown.
-          throw err;
+          rethrow;
         }
       }
 
@@ -97,7 +97,7 @@ class TusMainExecutor extends TusExecutor {
       if (onProgress != null) {
         onProgress(upload, progress);
       }
-    } while (!await uploader.uploadChunk());
+    } while (!(await uploader.uploadChunk()));
 
     // Allow cleaned up
     uploader.finish();

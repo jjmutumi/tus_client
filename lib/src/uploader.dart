@@ -24,8 +24,8 @@ class TusUploader {
   int offset;
 
   final TusClient client;
+
   final TusUpload upload;
-  HttpClientRequest _httpRequest;
 
   /// Set the maximum payload size for a single request counted in bytes. This
   /// is useful for splitting bigger uploads into multiple requests. For
@@ -51,6 +51,8 @@ class TusUploader {
   /// [uploadChunk] the first time.
   int payloadSize = 4 * 1024 * 1024;
 
+  HttpClientRequest _httpRequest;
+
   int _bytesRemainingForRequest;
 
   /// Begin a new [upload] request to specified [uploadURL] after a [client] has
@@ -70,6 +72,7 @@ class TusUploader {
     _httpRequest.headers.add("Upload-Offset", offset.toString());
     _httpRequest.headers.add("Content-Type", "application/offset+octet-stream");
     _httpRequest.headers.add("Expect", "100-continue");
+    _addHeaders();
   }
 
   /// Upload a part of the file by reading a chunk from the [TusUpload.file] and
@@ -131,9 +134,8 @@ class TusUploader {
             response);
       }
 
-      // TODO detect changes and seek accordingly
-      int serverOffset = int.tryParse(response.headers.value("Upload-Offset"));
-      if (serverOffset == -1) {
+      int serverOffset = int.tryParse(response.headers["upload-offset"].last);
+      if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header",
             response);
@@ -145,6 +147,16 @@ class TusUploader {
       }
 
       _httpRequest = null;
+    }
+  }
+
+  /// Set headers used for every HTTP request. Currently, this will add the
+  /// Tus-Resumable header and any custom header
+  void _addHeaders() {
+    if (client.headers != null) {
+      for (MapEntry<String, String> entry in client.headers.entries) {
+        _httpRequest.headers.add(entry.key, entry.value);
+      }
     }
   }
 

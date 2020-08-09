@@ -59,23 +59,20 @@ class TusClient {
 
     final response = await request.close();
     int responseCode = response.statusCode;
+
     if (!(responseCode >= 200 && responseCode < 300)) {
       throw ProtocolException(
           "unexpected status code ($responseCode) while creating upload",
           response);
     }
 
-    String urlStr = response.headers.value("Location");
+    String urlStr = response.headers["location"].last;
     if (urlStr == null || urlStr.isEmpty) {
       throw ProtocolException(
           "missing upload Uri in response for creating upload", response);
     }
 
-    // The upload Uri must be relative to the Uri of the response by which is
-    // was returned, not the upload creation Uri. In most cases, there is no
-    // difference between those two but there may be cases in which the POST
-    // request is redirected.
-    Uri uploadURL = response.redirects.last.location.replace(path: urlStr);
+    Uri uploadURL = Uri.parse(urlStr);
 
     if (resumingEnabled) {
       urlStore.set(upload.fingerprint, uploadURL);
@@ -97,6 +94,7 @@ class TusClient {
     }
 
     Uri uploadURL = await urlStore.get(upload.fingerprint);
+
     if (uploadURL == null) {
       throw FingerprintNotFoundException(upload.fingerprint);
     }

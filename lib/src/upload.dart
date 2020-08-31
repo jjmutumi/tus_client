@@ -34,7 +34,9 @@ class TusUpload {
     final path = file.absolute.path.replaceAll(RegExp(r"\W+"), '.');
     _fingerprint = "$path-$_size";
     _metadata = metadata ?? {};
-    _metadata["filename"] = p.basename(file.path);
+    if (!_metadata.containsKey("filename")) {
+      _metadata["filename"] = p.basename(file.path);
+    }
   }
 
   int get size => _size;

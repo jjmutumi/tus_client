@@ -1,6 +1,8 @@
 # tus_client
 
-A TUS client for dart. Translation of the [tus-java-client](https://github.com/tus/tus-java-client).
+A TUS client in pure dart. [Resumable uploads using TUS protocol](https://tus.io/)
+
+Translation of the [tus-java-client](https://github.com/tus/tus-java-client).
 
 > **tus** is a protocol based on HTTP for *resumable file uploads*. Resumable
 > means that an upload can be interrupted at any moment and can be resumed without

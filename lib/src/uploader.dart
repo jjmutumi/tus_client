@@ -94,6 +94,7 @@ class TusUploader {
     final bytesRead = await upload.readInto(buffer, offset);
     // Do not write the entire buffer to the stream
     _httpRequest.add(buffer.sublist(0, bytesRead));
+    _httpRequest.flush();
 
     offset += bytesRead;
     _bytesRemainingForRequest -= bytesRead;

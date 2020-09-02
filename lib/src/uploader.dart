@@ -134,7 +134,10 @@ class TusUploader {
             response);
       }
 
-      int serverOffset = int.tryParse(response.headers["upload-offset"].last);
+      final strOffset = RegExp(r"(\d+)")
+          .matchAsPrefix(response.headers["upload-offset"].first)
+          ?.group(0);
+      int serverOffset = int.tryParse(strOffset);
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header",

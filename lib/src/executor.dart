@@ -47,9 +47,10 @@ abstract class TusExecutor {
         return true;
       } catch (err, trace) {
         // Do not attempt a retry, if the Exception suggests so.
-        if (err is ProtocolException && !err.shouldRetry()) {
-          rethrow;
-        }
+        // Just always retry
+        // if (err is ProtocolException && !err.shouldRetry()) {
+        //   rethrow;
+        // }
 
         if (attempt >= delays.length) {
           // We exceeds the number of maximum retries. In this case the latest exception

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
@@ -85,7 +84,20 @@ main() {
     expect(client.uploadUrl.toString(), equals(uploadLocation));
   });
 
-  test('client_test.TusClient.create().failure', () async {
+  test('client_test.TusClient.create().failure.empty.location', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async => http.Response("", 201, headers: {"location": ""}));
+
+    expectLater(
+        () => client.create(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'missing upload Uri in response for creating upload')));
+  });
+
+  test('client_test.TusClient.create().failure.server.error', () async {
     final client = MockTusClient(url, file);
     when(client.httpClient.post(url, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response("500 Server Error", 500));
@@ -120,6 +132,176 @@ main() {
 
     expectLater(
         () => client.resume(), throwsA(isA<FingerprintNotFoundException>()));
+  });
+
+  test('client_test.TusClient.upload()', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": "100"}));
+
+    bool success = false;
+    double progress;
+    await client.upload(
+        onComplete: () => success = true, onProgress: (p) => progress = p);
+
+    expect(success, isTrue);
+    expect(progress, equals(100));
+  });
+
+  test('client_test.TusClient.upload().pause', () async {
+    final client = MockTusClient(url, file, maxChunkSize: 50);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer((_) async {
+      client.pause();
+      return http.Response("", 204, headers: {"upload-offset": "50"});
+    });
+
+    bool success = false;
+    double progress;
+    await client.upload(
+        onComplete: () => success = true, onProgress: (p) => progress = p);
+
+    expect(success, isFalse);
+    expect(progress, equals(50));
+  });
+
+  test('client_test.TusClient.upload().chunks', () async {
+    final client = MockTusClient(url, file, maxChunkSize: 50);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
+    int i = 0;
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer((_) async {
+      final offset = (++i) * 50;
+      return http.Response("", 204, headers: {"upload-offset": "$offset"});
+    });
+
+    bool success = false;
+    double progress;
+    await client.upload(
+        onComplete: () => success = true, onProgress: (p) => progress = p);
+
+    expect(success, isTrue);
+    expect(progress, equals(100));
+  });
+
+  test('client_test.TusClient.upload().offset.failure.server.error', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any))
+        .thenAnswer((_) async => http.Response("500 Server Error", 500));
+
+    expectLater(
+        () => client.upload(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'unexpected status code (500) while resuming upload')));
+  });
+
+  test('client_test.TusClient.upload().offset.failure.missing', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": ""}));
+
+    expectLater(
+        () => client.upload(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'missing upload offset in response for resuming upload')));
+  });
+
+  test('client_test.TusClient.upload().patch.failure.server.error', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer((_) async => http.Response("500 Server Error", 500));
+
+    expectLater(
+        () => client.upload(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'unexpected status code (500) while uploading chunk')));
+  });
+
+  test('client_test.TusClient.upload().patch.failure.missing.offset', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer((_) async => http.Response("", 204));
+
+    expectLater(
+        () => client.upload(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'response to PATCH request contains no or invalid Upload-Offset header')));
+  });
+
+  test('client_test.TusClient.upload().patch.failure.wrong.offset', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any)).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer(
+        (_) async => http.Response("", 204, headers: {"upload-offset": "50"}));
+
+    expectLater(
+        () => client.upload(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'response contains different Upload-Offset value (50) than expected (100)')));
   });
 }
 

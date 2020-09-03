@@ -1,6 +1,7 @@
-import 'dart:convert' show utf8, base64;
-import 'dart:io';
-import 'dart:typed_data';
+import 'dart:convert' show base64, utf8;
+import 'dart:io' show File, FileMode;
+import 'dart:math' show min;
+import 'dart:typed_data' show Uint8List;
 import 'exceptions.dart';
 import 'store.dart';
 
@@ -119,8 +120,9 @@ class TusClient {
       if (err is FingerprintNotFoundException ||
           err is ResumingNotEnabledException) {
         await create();
+      } else {
+        throw err;
       }
-      throw err;
     }
 
     // get offset from server
@@ -140,7 +142,7 @@ class TusClient {
       final response = await client.patch(
         _uploadUrl,
         headers: uploadHeaders,
-        body: _getData(),
+        body: await _getData(),
       );
 
       // check if correctly uploaded
@@ -149,7 +151,7 @@ class TusClient {
             "unexpected status code (${response.statusCode}) while uploading chunk");
       }
 
-      int serverOffset = int.tryParse(response.headers["upload-offset"]);
+      int serverOffset = int.tryParse(response.headers["upload-offset"] ?? "");
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
@@ -220,12 +222,14 @@ class TusClient {
 
   /// Get data from file to upload
   Future<Uint8List> _getData() async {
-    final buffer = Uint8List(maxChunkSize);
     final f = await file.open(mode: FileMode.read);
     await f.setPosition(_offset);
-    final bytesRead = await f.readInto(buffer);
-    await f.close();
+    final bytesRead = min(maxChunkSize, _fileSize - _offset);
     _offset += bytesRead;
-    return buffer.sublist(0, bytesRead);
+    try {
+      return await f.read(bytesRead);
+    } finally {
+      await f.close();
+    }
   }
 }

@@ -1,6 +1,7 @@
 # A tus client
 
 [![Build Status](https://travis-ci.org/jjmutumi/tus_client.svg?branch=master)](https://travis-ci.org/jjmutumi/tus_client)
+[![codecov](https://codecov.io/gh/jjmutumi/tus_client/branch/master/graph/badge.svg)](https://codecov.io/gh/jjmutumi/tus_client)
 
 ---
 

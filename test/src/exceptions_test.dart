@@ -15,7 +15,7 @@ main() {
     expect(
         "$err",
         "ResumingNotEnabledException: "
-            "resuming not enabled for this client, set a urlStore to do so");
+            "resuming not enabled for this client, set a store to do so");
   });
 
   test("exceptions_test.ProtocolException", () {

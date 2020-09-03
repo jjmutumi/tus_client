@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
@@ -8,7 +9,7 @@ import 'package:tus_client/tus_client.dart';
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockTusClient extends TusClient {
-  final mockHttpClient = MockHttpClient();
+  MockHttpClient httpClient;
 
   MockTusClient(
     Uri url,
@@ -24,14 +25,19 @@ class MockTusClient extends TusClient {
           headers: headers,
           metadata: metadata,
           maxChunkSize: maxChunkSize,
-        );
+        ) {
+    httpClient = MockHttpClient();
+  }
 
-  http.Client httpClient() => mockHttpClient;
+  @override
+  http.Client getHttpClient() => httpClient;
 }
 
 main() {
   File file;
   final url = Uri.parse("https://example.com/tus");
+  final uploadLocation =
+      "https://example.com/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6";
 
   setUpAll(() async {
     file = await _createTestFile("test.txt");
@@ -41,15 +47,16 @@ main() {
     await _clearTestFile(file);
   });
 
-  test("client_test.TusClient().simple", () async {
-    final client = TusClient(url, file);
+  test("client_test.TusClient()", () async {
+    final client = MockTusClient(url, file);
     expect(client.fingerprint, isNot("test.txt"));
     expect(client.fingerprint, endsWith("test.txt"));
     expect(client.uploadMetadata, equals("filename dGVzdC50eHQ="));
   });
 
   test("client_test.TusClient().metadata", () async {
-    final client = TusClient(url, file, metadata: {"id": "sample"});
+    final client = MockTusClient(url, file, metadata: {"id": "sample"});
+
     expect(client.fingerprint, isNot("test.txt"));
     expect(client.fingerprint, endsWith("test.txt"));
     expect(client.uploadMetadata, matches(RegExp(r"filename dGVzdC50eHQ=")));
@@ -57,8 +64,9 @@ main() {
   });
 
   test("client_test.TusClient().metadata.filename", () async {
-    final client = TusClient(url, file,
+    final client = MockTusClient(url, file,
         metadata: {"id": "sample", "filename": "another-name.txt"});
+
     expect(client.fingerprint, isNot("test.txt"));
     expect(client.fingerprint, endsWith("test.txt"));
     expect(client.uploadMetadata,
@@ -68,10 +76,8 @@ main() {
 
   test('client_test.TusClient.create()', () async {
     final client = MockTusClient(url, file);
-    final uploadLocation =
-        "https://example.com/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6";
-    when(client.mockHttpClient.post(url, headers: anyNamed('headers')))
-        .thenAnswer((_) async =>
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
 
     await client.create();
@@ -81,35 +87,39 @@ main() {
 
   test('client_test.TusClient.create().failure', () async {
     final client = MockTusClient(url, file);
-    when(client.mockHttpClient.post(url, headers: anyNamed('headers')))
+    when(client.httpClient.post(url, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response("500 Server Error", 500));
 
-    await client.create();
-
-    expect(client.uploadUrl, isNull);
+    expectLater(
+        () => client.create(),
+        throwsA(predicate((e) =>
+            e is ProtocolException &&
+            e.message ==
+                'unexpected status code (500) while creating upload')));
   });
 
   test('client_test.TusClient.resume()', () async {
-    final client = MockTusClient(Uri.parse("https://example.com/tus"), file);
+    final store = TusMemoryStore();
+    final client = MockTusClient(url, file, store: store);
+    store.set(client.fingerprint, Uri.parse(uploadLocation));
 
-    final mockHttpClient = MockHttpClient();
+    await client.resume();
 
-    // when(mockHttpClientResponse.statusCode).thenReturn(201);
-    // when(mockHttpClientResponse.redirects).thenReturn([mockRedirectInfo]);
-    // when(mockHttpClientResponse.headers).thenReturn(mockHttpResponseHeaders);
+    expect(client.uploadUrl.toString(), equals(uploadLocation));
+  });
 
-    // when(mockHttpClientRequest.close()).thenAnswer(
-    //   (_) async => mockHttpClientResponse,
-    // );
-    // when(mockHttpClientRequest.headers).thenReturn(mockHttpHeaders);
+  test('client_test.TusClient.resume().failure.no.store', () async {
+    final client = MockTusClient(url, file);
 
-    // when(mockHttpClient.postUrl(any)).thenAnswer(
-    //   (_) async => mockHttpClientRequest,
-    // );
-    // client.mockHttpClient = mockHttpClient;
+    expectLater(
+        () => client.resume(), throwsA(isA<ResumingNotEnabledException>()));
+  });
 
-    // final uploader = await client.create();
-    // expect(uploader.uploadURL.toString(), "https://example.com/files");
+  test('client_test.TusClient.resume().failure.finger.not.found', () async {
+    final client = MockTusClient(url, file, store: TusMemoryStore());
+
+    expectLater(
+        () => client.resume(), throwsA(isA<FingerprintNotFoundException>()));
   });
 }
 

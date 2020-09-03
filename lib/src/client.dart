@@ -242,9 +242,9 @@ class TusClient {
   }
 
   int _parseOffset(String offset) {
-    if (offset.contains(",")) {
+    if (offset?.contains(",") ?? false) {
       offset = offset.substring(0, offset.indexOf(","));
     }
-    return int.tryParse(offset);
+    return int.tryParse(offset ?? "");
   }
 }

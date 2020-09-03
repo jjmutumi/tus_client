@@ -82,7 +82,8 @@ class TusClient {
       });
 
     final response = await client.post(url, headers: createHeaders);
-    if (!(response.statusCode >= 200 && response.statusCode < 300)) {
+    if (!(response.statusCode >= 200 && response.statusCode < 300) &&
+        response.statusCode != 404) {
       throw ProtocolException(
           "unexpected status code (${response.statusCode}) while creating upload");
     }
@@ -156,7 +157,7 @@ class TusClient {
             "unexpected status code (${response.statusCode}) while uploading chunk");
       }
 
-      int serverOffset = int.tryParse(response.headers["upload-offset"] ?? "");
+      int serverOffset = _parseOffset(response.headers["upload-offset"]);
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
@@ -219,12 +220,12 @@ class TusClient {
           "unexpected status code (${response.statusCode}) while resuming upload");
     }
 
-    String offsetStr = response.headers["upload-offset"];
-    if (offsetStr == null || offsetStr.isEmpty) {
+    int serverOffset = _parseOffset(response.headers["upload-offset"]);
+    if (serverOffset == null) {
       throw ProtocolException(
           "missing upload offset in response for resuming upload");
     }
-    return int.tryParse(offsetStr);
+    return serverOffset;
   }
 
   /// Get data from file to upload
@@ -238,5 +239,12 @@ class TusClient {
     } finally {
       await f.close();
     }
+  }
+
+  int _parseOffset(String offset) {
+    if (offset.contains(",")) {
+      offset = offset.substring(0, offset.indexOf(","));
+    }
+    return int.tryParse(offset);
   }
 }

@@ -1,5 +1,7 @@
 # A tus client
 
+[![Build Status](https://travis-ci.org/jjmutumi/tus_client.svg?branch=master)](https://travis-ci.org/jjmutumi/tus_client)
+
 ---
 
 A tus client in pure dart. [Resumable uploads using tus protocol](https://tus.io/)

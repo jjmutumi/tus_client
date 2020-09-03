@@ -2,8 +2,6 @@
 
 A TUS client in pure dart. [Resumable uploads using TUS protocol](https://tus.io/)
 
-Translation of the [tus-java-client](https://github.com/tus/tus-java-client).
-
 > **tus** is a protocol based on HTTP for *resumable file uploads*. Resumable
 > means that an upload can be interrupted at any moment and can be resumed without
 > re-uploading the previous data again. An interruption may happen willingly, if
@@ -28,26 +26,22 @@ dependencies:
 ## Usage
 
 ```dart
-final client = TusClient(
-    Uri.parse("https://example.com/tus"),
-    urlStore: TusURLMemoryStore(),
-);
-
 final file = File("/my/pic.jpg");
 
-final upload = TusUpload();
-await upload.initialize(file);
-
-final executor = TusMainExecutor(
-    client,
+final client = TusClient(
+    Uri.parse("https://example.com/tus"),
+    file,
+    store: TusMemoryStore(),
+    metadata: {}
+);
+await client.upload(
     onComplete: (upload) {
-      print("Complete!");
+        print("Complete!");
     },
     onProgress: (upload, progress) {
-      print("Progress: $progress");
+        print("Progress: $progress");
     },
 );
-await executor.makeAttempts(upload);
 ```
 
 ### Using Persistent URL Store
@@ -62,7 +56,8 @@ final tempDirectory = Directory(p.join(tempDir, "tus-uploads"));
 
 final client = TusClient(
     Uri.parse("https://example.com/tus"),
-    urlStore: TusURLFileStore(tempDirectory),
+    file,
+    store: TusFileStore(tempDirectory),
 );
 ```
 
@@ -71,7 +66,8 @@ final client = TusClient(
 ```dart
 final client = TusClient(
     Uri.parse("https://example.com/tus"),
-    urlStore: TusURLMemoryStore(),
+    file,
+    store: TusMemoryStore(),
     headers:{"Authorization": "..."},
 );
 ```

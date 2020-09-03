@@ -1,8 +1,11 @@
+import 'dart:convert' show utf8, base64;
 import 'dart:io';
+import 'dart:typed_data';
 import 'exceptions.dart';
-import 'upload.dart';
-import 'uploader.dart';
-import 'url_store.dart';
+import 'store.dart';
+
+import 'package:http/http.dart' as http;
+import "package:path/path.dart" as p;
 
 /// This class is used for creating or resuming uploads.
 class TusClient {
@@ -11,169 +14,218 @@ class TusClient {
   static final tusVersion = "1.0.0";
 
   /// The tus server Uri
-  final Uri uploadCreationURL;
+  final Uri url;
 
   /// Storage used to save and retrieve upload URLs by its fingerprint.
-  final TusURLStore urlStore;
+  final TusStore store;
 
-  /// Enable removing fingerprints after a successful upload.
-  final bool removeFingerprintOnSuccess;
+  final File file;
+
+  final Map<String, String> metadata;
 
   /// Any additional headers
   final Map<String, String> headers;
 
-  final int connectTimeout;
+  /// The maximum payload size in bytes when uploading the file in chunks (512KB)
+  final int maxChunkSize;
 
-  bool _resumingEnabled = false;
+  int _fileSize;
+
+  String _fingerprint;
+
+  String _uploadMetadata;
+
+  Uri _uploadUrl;
+
+  int _offset;
+
+  bool _pauseUpload = false;
 
   TusClient(
-    this.uploadCreationURL, {
-    this.urlStore,
+    this.url,
+    this.file, {
+    this.store,
     this.headers,
-    this.removeFingerprintOnSuccess = true,
-    this.connectTimeout = 5000,
+    this.metadata = const {},
+    this.maxChunkSize = 512 * 1024,
   }) {
-    if (urlStore != null) {
-      _resumingEnabled = true;
-    }
+    _fingerprint = generateFingerprint();
+    _uploadMetadata = generateMetadata();
   }
 
-  bool get resumingEnabled => _resumingEnabled;
+  bool get resumingEnabled => store != null;
 
-  /// Create a new [upload] returning a [TusUploader] to upload the file's
-  /// chunks (manually).
-  ///
-  /// Throws [ProtocolException] or [Exception]
-  Future<TusUploader> createUpload(TusUpload upload) async {
-    final client = httpClient();
-    client.connectionTimeout = Duration(milliseconds: connectTimeout);
-    final request = await client.postUrl(uploadCreationURL);
-    _addHeaders(request);
+  Uri get uploadUrl => _uploadUrl;
 
-    String metadata = upload.metadata;
-    if (metadata.isNotEmpty) {
-      request.headers.add("Upload-Metadata", metadata);
-    }
+  String get fingerprint => _fingerprint;
 
-    request.headers.add("Upload-Length", upload.size.toString());
+  String get uploadMetadata => _uploadMetadata;
 
-    final response = await request.close();
-    int responseCode = response.statusCode;
+  http.Client getHttpClient() => http.Client();
 
-    if (!(responseCode >= 200 && responseCode < 300)) {
+  /// Create a new [upload] throwing [ProtocolException] on server error
+  create() async {
+    _fileSize = await file.length();
+
+    final client = getHttpClient();
+    final createHeaders = Map<String, String>.from(headers ?? {})
+      ..addAll({
+        "Tus-Resumable": tusVersion,
+        "Upload-Metadata": _uploadMetadata,
+        "Upload-Length": "$_fileSize",
+      });
+
+    final response = await client.post(url, headers: createHeaders);
+    if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(
-          "unexpected status code ($responseCode) while creating upload",
-          response);
+          "unexpected status code (${response.statusCode}) while creating upload");
     }
 
-    String urlStr = response.headers["location"].last;
+    String urlStr = response.headers["location"];
     if (urlStr == null || urlStr.isEmpty) {
       throw ProtocolException(
-          "missing upload Uri in response for creating upload", response);
+          "missing upload Uri in response for creating upload");
     }
 
-    Uri uploadURL = Uri.parse(urlStr);
-
-    if (resumingEnabled) {
-      urlStore.set(upload.fingerprint, uploadURL);
-    }
-
-    return TusUploader(this, upload, uploadURL, 0);
+    _uploadUrl = Uri.parse(urlStr);
+    store?.set(_fingerprint, _uploadUrl);
   }
 
-  /// Try to resume an already started [upload] returning a [TusUploader] to
-  /// upload the file's remaining chunks (manually).
-  ///
-  /// [TusClient] must be initialized with [urlStore].
-  ///
-  /// Throws [FingerprintNotFoundException] or [ResumingNotEnabledException]
-  /// or [ProtocolException] or [Exception]
-  Future<TusUploader> resumeUpload(TusUpload upload) async {
+  /// Check if possible to resume an already started upload throwing
+  ///  [FingerprintNotFoundException] or [ResumingNotEnabledException]
+  resume() async {
+    _fileSize = await file.length();
+
     if (!resumingEnabled) {
       throw ResumingNotEnabledException();
     }
 
-    Uri uploadURL = await urlStore.get(upload.fingerprint);
+    _uploadUrl = await store.get(_fingerprint);
 
-    if (uploadURL == null) {
-      throw FingerprintNotFoundException(upload.fingerprint);
+    if (_uploadUrl == null) {
+      throw FingerprintNotFoundException(_fingerprint);
     }
-
-    return await beginOrResumeUploadFromURL(upload, uploadURL);
   }
 
-  /// Try to resume an already started [upload] returning a [TusUploader] to
-  /// upload the file's remaining chunks (manually).
-  ///
-  /// Incontrast to [resumeOrCreateUpload] this method will not create a new
-  /// upload.
-  ///
-  /// [TusClient] must be initialized with [urlStore].
-  ///
-  /// Throws [FingerprintNotFoundException] or [ResumingNotEnabledException]
-  /// or [ProtocolException] or [Exception]
-  Future<TusUploader> beginOrResumeUploadFromURL(
-      TusUpload upload, Uri uploadURL) async {
-    final client = httpClient();
-    client.connectionTimeout = Duration(milliseconds: connectTimeout);
-    final request = await client.headUrl(uploadCreationURL);
-    _addHeaders(request);
-
-    final response = await request.close();
-    int responseCode = response.statusCode;
-    if (!(responseCode >= 200 && responseCode < 300)) {
-      throw ProtocolException(
-          "unexpected status code ($responseCode) while resuming upload",
-          response);
-    }
-
-    String offsetStr = response.headers.value("Upload-Offset");
-    if (offsetStr == null || offsetStr.isEmpty) {
-      throw ProtocolException(
-          "missing upload offset in response for resuming upload", response);
-    }
-    int offset = int.tryParse(offsetStr);
-
-    return TusUploader(this, upload, uploadURL, offset);
-  }
-
-  /// Try to resume an [upload] using [resumeUpload]. If the method call throws
-  /// an [ResumingNotEnabledException] or [FingerprintNotFoundException], a
-  /// new upload will be created using [createUpload].
-  ///
-  /// Throws [ProtocolException] or [Exception]
-  Future<TusUploader> resumeOrCreateUpload(TusUpload upload) async {
+  /// Start or resume an upload in chunks of [maxChunkSize] throwing
+  /// [ProtocolException] on server error
+  upload({
+    Function(double) onProgress,
+    Function() onComplete,
+  }) async {
     try {
-      return await resumeUpload(upload);
+      await resume();
     } catch (err) {
       if (err is FingerprintNotFoundException ||
-          err is ResumingNotEnabledException ||
-          (err is ProtocolException && err.response?.statusCode == 404)) {
-        return await createUpload(upload);
+          err is ResumingNotEnabledException) {
+        await create();
       }
       throw err;
     }
-  }
 
-  /// Set headers used for every HTTP request. Currently, this will add the
-  /// Tus-Resumable header and any custom header
-  void _addHeaders(HttpClientRequest request) {
-    request.headers.add("Tus-Resumable", tusVersion);
+    // get offset from server
+    _offset = await _getOffset();
 
-    if (headers != null) {
-      for (MapEntry<String, String> entry in headers.entries) {
-        request.headers.add(entry.key, entry.value);
+    int totalBytes = _fileSize;
+
+    // start upload
+    final client = getHttpClient();
+
+    while (!_pauseUpload && _offset < totalBytes) {
+      final uploadHeaders = Map<String, String>.from(headers ?? {})
+        ..addAll({
+          "Upload-Offset": "$_offset",
+          "Content-Type": "application/offset+octet-stream"
+        });
+      final response = await client.patch(
+        _uploadUrl,
+        headers: uploadHeaders,
+        body: _getData(),
+      );
+
+      // check if correctly uploaded
+      if (!(response.statusCode >= 200 && response.statusCode < 300)) {
+        throw ProtocolException(
+            "unexpected status code (${response.statusCode}) while uploading chunk");
+      }
+
+      int serverOffset = int.tryParse(response.headers["upload-offset"]);
+      if (serverOffset == null) {
+        throw ProtocolException(
+            "response to PATCH request contains no or invalid Upload-Offset header");
+      }
+      if (_offset != serverOffset) {
+        throw ProtocolException(
+            "response contains different Upload-Offset value ($serverOffset) than expected ($_offset)");
+      }
+
+      // update progress
+      if (onProgress != null) {
+        onProgress(_offset / totalBytes * 100);
+      }
+    }
+
+    if (_offset == totalBytes) {
+      this.onComplete();
+      if (onComplete != null) {
+        onComplete();
       }
     }
   }
 
-  /// Actions to be performed after a successful [upload] completion such as
-  /// removal from the [urlStore] if [removeFingerprintOnSuccess]
-  void uploadFinished(TusUpload upload) {
-    if (resumingEnabled && removeFingerprintOnSuccess) {
-      urlStore.remove(upload.fingerprint);
-    }
+  /// Pause the current upload
+  pause() {
+    _pauseUpload = true;
   }
 
-  HttpClient httpClient() => HttpClient();
+  /// Actions to be performed after a successful upload
+  void onComplete() {
+    store?.remove(_fingerprint);
+  }
+
+  String generateFingerprint() {
+    return file.absolute.path.replaceAll(RegExp(r"\W+"), '.');
+  }
+
+  String generateMetadata() {
+    final meta = Map<String, String>.from(metadata ?? {});
+
+    if (!meta.containsKey("filename")) {
+      meta["filename"] = p.basename(file.path);
+    }
+
+    return meta.entries
+        .map((entry) =>
+            entry.key + " " + base64.encode(utf8.encode(entry.value)))
+        .join(",");
+  }
+
+  /// Get offset from server throwing [ProtocolException] on error
+  Future<int> _getOffset() async {
+    final client = getHttpClient();
+    final response = await client.head(_uploadUrl, headers: headers);
+
+    if (!(response.statusCode >= 200 && response.statusCode < 300)) {
+      throw ProtocolException(
+          "unexpected status code (${response.statusCode}) while resuming upload");
+    }
+
+    String offsetStr = response.headers["upload-offset"];
+    if (offsetStr == null || offsetStr.isEmpty) {
+      throw ProtocolException(
+          "missing upload offset in response for resuming upload");
+    }
+    return int.tryParse(offsetStr);
+  }
+
+  /// Get data from file to upload
+  Future<Uint8List> _getData() async {
+    final buffer = Uint8List(maxChunkSize);
+    final f = await file.open(mode: FileMode.read);
+    await f.setPosition(_offset);
+    final bytesRead = await f.readInto(buffer);
+    await f.close();
+    _offset += bytesRead;
+    return buffer.sublist(0, bytesRead);
+  }
 }

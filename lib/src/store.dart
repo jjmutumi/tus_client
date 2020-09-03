@@ -1,15 +1,14 @@
 import 'dart:io';
 
 import "package:path/path.dart" as p;
-import 'upload.dart';
 
 /// Implementations of this interface are used to lookup a
-/// [TusUpload.fingerprint] with the corresponding [TusUpload.file].
+/// [fingerprint] with the corresponding [file].
 ///
 /// This functionality is used to allow resuming uploads.
 ///
-/// See [TusURLMemoryStore] or [TusURLFileStore]
-abstract class TusURLStore {
+/// See [TusMemoryStore] or [TusFileStore]
+abstract class TusStore {
   /// Store a new [fingerprint] and its upload [url].
   Future<void> set(String fingerprint, Uri url);
 
@@ -21,14 +20,14 @@ abstract class TusURLStore {
   Future<void> remove(String fingerprint);
 }
 
-/// This class is used to lookup a [TusUpload.fingerprint] with the
-/// corresponding [TusUpload.file] entries in a [Map].
+/// This class is used to lookup a [fingerprint] with the
+/// corresponding [file] entries in a [Map].
 ///
 /// This functionality is used to allow resuming uploads.
 ///
 /// This store **will not** keep the values after your application crashes or
 /// restarts.
-class TusURLMemoryStore implements TusURLStore {
+class TusMemoryStore implements TusStore {
   Map<String, Uri> store = {};
 
   @override
@@ -47,17 +46,17 @@ class TusURLMemoryStore implements TusURLStore {
   }
 }
 
-/// This class is used to lookup a [TusUpload.fingerprint] with the
-/// corresponding [TusUpload.file] entries in different files on disk.
+/// This class is used to lookup a [fingerprint] with the
+/// corresponding [file] entries in different files on disk.
 ///
 /// This functionality is used to allow resuming uploads.
 ///
 /// This store **will** keep the values after your application crashes or
 /// restarts.
-class TusURLFileStore implements TusURLStore {
+class TusFileStore implements TusStore {
   final Directory directory;
 
-  TusURLFileStore(this.directory);
+  TusFileStore(this.directory);
 
   @override
   Future<void> set(String fingerprint, Uri url) async {

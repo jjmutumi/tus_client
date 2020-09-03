@@ -7,22 +7,22 @@ main() {
   final fingerprint = "test";
   final url = "https://example.com/files/pic.jpg?token=987298374";
   final uri = Uri.parse(url);
-  group('url_store:TusURLMemoryStore', () {
+  group('url_store:TusMemoryStore', () {
     test("set", () async {
-      TusURLMemoryStore store = TusURLMemoryStore();
+      TusMemoryStore store = TusMemoryStore();
       await store.set(fingerprint, uri);
       final foundUrl = await store.get(fingerprint);
       expect(foundUrl, uri);
     });
 
     test("get.empty", () async {
-      TusURLMemoryStore store = TusURLMemoryStore();
+      TusMemoryStore store = TusMemoryStore();
       final foundUrl = await store.get(fingerprint);
       expect(foundUrl, isNull);
     });
 
     test("remove", () async {
-      TusURLMemoryStore store = TusURLMemoryStore();
+      TusMemoryStore store = TusMemoryStore();
       await store.set(fingerprint, uri);
       await store.remove(fingerprint);
       final foundUrl = await store.get(fingerprint);
@@ -30,7 +30,7 @@ main() {
     });
 
     test("remove.empty", () async {
-      TusURLMemoryStore store = TusURLMemoryStore();
+      TusMemoryStore store = TusMemoryStore();
       var foundUrl = await store.get(fingerprint);
       expect(foundUrl, isNull);
       await store.remove(fingerprint);
@@ -39,24 +39,24 @@ main() {
     });
   });
 
-  group('url_store:TusURLFileStore', () {
+  group('url_store:TusFileStore', () {
     final directory = Directory("test-dir");
 
     test("set", () async {
-      TusURLFileStore store = TusURLFileStore(directory);
+      TusFileStore store = TusFileStore(directory);
       await store.set(fingerprint, uri);
       final foundUrl = await store.get(fingerprint);
       expect(foundUrl, uri);
     });
 
     test("get.empty", () async {
-      TusURLFileStore store = TusURLFileStore(directory);
+      TusFileStore store = TusFileStore(directory);
       final foundUrl = await store.get(fingerprint);
       expect(foundUrl, isNull);
     });
 
     test("remove", () async {
-      TusURLFileStore store = TusURLFileStore(directory);
+      TusFileStore store = TusFileStore(directory);
       await store.set(fingerprint, uri);
       await store.remove(fingerprint);
       final foundUrl = await store.get(fingerprint);
@@ -64,7 +64,7 @@ main() {
     });
 
     test("remove.empty", () async {
-      TusURLFileStore store = TusURLFileStore(directory);
+      TusFileStore store = TusFileStore(directory);
       var foundUrl = await store.get(fingerprint);
       expect(foundUrl, isNull);
       await store.remove(fingerprint);

@@ -1,10 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:tus_client/tus_client.dart';
-
-class MockResponse extends Mock implements HttpClientResponse {}
 
 main() {
   test("exceptions_test.FingerprintNotFoundException", () {
@@ -29,30 +24,21 @@ main() {
         "$err",
         "ProtocolException: "
             "Expected HEADER 'Tus-Resumable'");
-    expect(err.shouldRetry(), false);
   });
 
   test("exceptions_test.ProtocolException.response.shouldRetry", () {
-    final response = MockResponse();
-    when(response.statusCode).thenReturn(506);
-
-    final err = ProtocolException("Expected HEADER 'Tus-Resumable'", response);
+    final err = ProtocolException("Expected HEADER 'Tus-Resumable'");
     expect(
         "$err",
         "ProtocolException: "
             "Expected HEADER 'Tus-Resumable'");
-    expect(err.shouldRetry(), true);
   });
 
   test("exceptions_test.ProtocolException.response.shouldNotRetry", () {
-    final response = MockResponse();
-    when(response.statusCode).thenReturn(401);
-
-    final err = ProtocolException("Expected HEADER 'Tus-Resumable'", response);
+    final err = ProtocolException("Expected HEADER 'Tus-Resumable'");
     expect(
         "$err",
         "ProtocolException: "
             "Expected HEADER 'Tus-Resumable'");
-    expect(err.shouldRetry(), false);
   });
 }

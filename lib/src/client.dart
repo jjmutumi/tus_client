@@ -54,14 +54,19 @@ class TusClient {
     _uploadMetadata = generateMetadata();
   }
 
+  /// Whether the client supports resuming
   bool get resumingEnabled => store != null;
 
+  /// The URI on the server for the file
   Uri get uploadUrl => _uploadUrl;
 
+  /// The fingerprint of the file being uploaded
   String get fingerprint => _fingerprint;
 
+  /// The 'Upload-Metadata' header sent to server
   String get uploadMetadata => _uploadMetadata;
 
+  /// Override this method to use a custom Client
   http.Client getHttpClient() => http.Client();
 
   /// Create a new [upload] throwing [ProtocolException] on server error
@@ -185,10 +190,12 @@ class TusClient {
     store?.remove(_fingerprint);
   }
 
+  /// Override this method to customize creating file fingerprint
   String generateFingerprint() {
     return file.absolute.path.replaceAll(RegExp(r"\W+"), '.');
   }
 
+  /// Override this to customize creating 'Upload-Metadata'
   String generateMetadata() {
     final meta = Map<String, String>.from(metadata ?? {});
 

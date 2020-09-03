@@ -1,4 +1,4 @@
-## [0.0.2] - 
+## [0.0.2] - Bug fix
 
 * Fixing failure when offset for server is missing or null
 

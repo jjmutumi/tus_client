@@ -1,6 +1,8 @@
-# tus_client
+# A tus client
 
-A TUS client in pure dart. [Resumable uploads using TUS protocol](https://tus.io/)
+---
+
+A tus client in pure dart. [Resumable uploads using tus protocol](https://tus.io/)
 
 > **tus** is a protocol based on HTTP for *resumable file uploads*. Resumable
 > means that an upload can be interrupted at any moment and can be resumed without
@@ -8,13 +10,15 @@ A TUS client in pure dart. [Resumable uploads using TUS protocol](https://tus.io
 > the user wants to pause, or by accident in case of a network issue or server
 > outage.
 
-- [tus_client](#tus_client)
+- [A tus client](#a-tus-client)
   - [Usage](#usage)
     - [Using Persistent URL Store](#using-persistent-url-store)
     - [Adding Extra Headers](#adding-extra-headers)
     - [Adding extra data](#adding-extra-data)
     - [Changing chunk size](#changing-chunk-size)
     - [Pausing upload](#pausing-upload)
+  - [Example](#example)
+  - [Maintainers](#maintainers)
 
 ## Usage
 
@@ -27,21 +31,20 @@ final client = TusClient(
     Uri.parse("https://master.tus.io/files/"),
     file,
     store: TusMemoryStore(),
-    metadata: {}
 );
 
 // Starts the upload
 await client.upload(
-    onComplete: (upload) {
+    onComplete: () {
         print("Complete!");
+
+        // Prints the uploaded file URL
+        print(client.uploadUrl.toString());
     },
-    onProgress: (upload, progress) {
+    onProgress: (progress) {
         print("Progress: $progress");
     },
 );
-
-// Prints the uploaded file URL
-print(client.uploadUrl.toString());
 ```
 
 ### Using Persistent URL Store
@@ -113,11 +116,19 @@ Future.delayed(Duration(seconds: 5)).then((_) =>client.pause());
 
 // Starts the upload
 await client.upload(
-    onComplete: (upload) {
+    onComplete: () {
         print("Complete!");
     },
-    onProgress: (upload, progress) {
+    onProgress: (progress) {
         print("Progress: $progress");
     },
 );
 ```
+
+## Example
+
+For an example of usage in a Flutter app (using file picker) see: [/example](https://github.com/jjmutumi/tus_client/tree/master/example/lib/main.dart)
+
+## Maintainers
+
+* [Joseph N. Mutumi](https://github.com/jjmutumi)

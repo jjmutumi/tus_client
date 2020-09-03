@@ -1,3 +1,7 @@
+## [0.0.2] - 
+
+* Fixing failure when offset for server is missing or null
+
 ## [0.0.1] - Initial release
 
 * Support for TUS 1.0.0 protocol

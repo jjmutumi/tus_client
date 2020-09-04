@@ -1,5 +1,6 @@
 # A tus client
 
+[![Pub Version](https://img.shields.io/pub/v/tus_client)](https://pub.dev/packages/tus_client)
 [![Build Status](https://travis-ci.org/jjmutumi/tus_client.svg?branch=master)](https://travis-ci.org/jjmutumi/tus_client)
 [![codecov](https://codecov.io/gh/jjmutumi/tus_client/branch/master/graph/badge.svg)](https://codecov.io/gh/jjmutumi/tus_client)
 
@@ -78,7 +79,7 @@ await client.upload();
 final client = TusClient(
     Uri.parse("https://master.tus.io/files/"),
     file,
-    headers:{"Authorization": "..."},
+    headers: {"Authorization": "..."},
 );
 ```
 

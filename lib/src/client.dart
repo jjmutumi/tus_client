@@ -142,6 +142,7 @@ class TusClient {
     while (!_pauseUpload && _offset < totalBytes) {
       final uploadHeaders = Map<String, String>.from(headers ?? {})
         ..addAll({
+          "Tus-Resumable": tusVersion,
           "Upload-Offset": "$_offset",
           "Content-Type": "application/offset+octet-stream"
         });
@@ -213,7 +214,12 @@ class TusClient {
   /// Get offset from server throwing [ProtocolException] on error
   Future<int> _getOffset() async {
     final client = getHttpClient();
-    final response = await client.head(_uploadUrl, headers: headers);
+
+    final offsetHeaders = Map<String, String>.from(headers ?? {})
+      ..addAll({
+        "Tus-Resumable": tusVersion,
+      });
+    final response = await client.head(_uploadUrl, headers: offsetHeaders);
 
     if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(

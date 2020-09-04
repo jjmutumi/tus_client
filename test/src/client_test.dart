@@ -82,6 +82,11 @@ main() {
     await client.create();
 
     expect(client.uploadUrl.toString(), equals(uploadLocation));
+    expect(
+        verify(client.httpClient.post(url, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
   });
 
   test('client_test.TusClient.create().failure.empty.location', () async {
@@ -139,7 +144,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     when(client.httpClient.patch(
       any,
@@ -155,6 +160,22 @@ main() {
 
     expect(success, isTrue);
     expect(progress, equals(100));
+    expect(
+        verify(client.httpClient.post(any, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+    expect(
+        verify(client.httpClient.head(any, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+    expect(
+        verify(client.httpClient.patch(any,
+                headers: captureAnyNamed('headers'), body: anyNamed('body')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
   });
 
   test('client_test.TusClient.upload().pause', () async {
@@ -162,7 +183,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     when(client.httpClient.patch(
       any,
@@ -187,7 +208,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     int i = 0;
     when(client.httpClient.patch(
@@ -213,7 +234,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any))
+    when(client.httpClient.head(any, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response("500 Server Error", 500));
 
     expectLater(
@@ -229,7 +250,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": ""}));
 
     expectLater(
@@ -245,7 +266,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient.patch(
       any,
@@ -266,7 +287,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient.patch(
       any,
@@ -287,7 +308,7 @@ main() {
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
             http.Response("", 201, headers: {"location": uploadLocation}));
-    when(client.httpClient.head(any)).thenAnswer(
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient.patch(
       any,

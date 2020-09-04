@@ -90,7 +90,7 @@ class _UploadPageState extends State<UploadPage> {
                               // Create a client
                               print("Create a client");
                               _client = TusClient(
-                                Uri.parse("https://master.tus.io/files/"),
+                                Uri.parse("http://master.tus.io/files/"),
                                 _file,
                                 store: TusMemoryStore(),
                               );

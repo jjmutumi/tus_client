@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' show join, basename;
+import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
 import 'package:tus_client/tus_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -57,7 +59,7 @@ class _UploadPageState extends State<UploadPage> {
                 color: Colors.teal,
                 child: InkWell(
                   onTap: () async {
-                    _file = await FilePicker.getFile();
+                    _file = await _copyToTemp(await FilePicker.getFile());
                     setState(() {
                       _progress = 0;
                       _fileUrl = null;
@@ -90,15 +92,16 @@ class _UploadPageState extends State<UploadPage> {
                               // Create a client
                               print("Create a client");
                               _client = TusClient(
-                                Uri.parse("http://master.tus.io/files/"),
+                                Uri.parse("https://master.tus.io/files/"),
                                 _file,
                                 store: TusMemoryStore(),
                               );
 
                               print("Starting upload");
                               await _client.upload(
-                                onComplete: () {
+                                onComplete: () async {
                                   print("Completed!");
+                                  await _clearFromTemp();
                                   setState(() => _fileUrl = _client.uploadUrl);
                                 },
                                 onProgress: (progress) {
@@ -168,5 +171,23 @@ class _UploadPageState extends State<UploadPage> {
         ),
       ),
     );
+  }
+
+  /// Copy file to temporary directory before uploading
+  Future<File> _copyToTemp(File chosenFile) async {
+    if (chosenFile != null) {
+      Directory tempDir = await getTemporaryDirectory();
+      String newPath = join(tempDir.path, basename(chosenFile.path));
+      print("Chosen file: ${chosenFile.absolute.path}");
+      print("Temp file: $newPath");
+      return await chosenFile.copy(newPath);
+    }
+    return chosenFile;
+  }
+
+  /// clear file from temporary directory after uploading
+  _clearFromTemp() async {
+    await _file?.delete();
+    setState(() => _file = null);
   }
 }

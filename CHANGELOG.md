@@ -1,3 +1,7 @@
+## [0.0.4] - Feature request
+
+* Changing example by adding copying file to be uploaded to application temp directory before uploading
+
 ## [0.0.3] - Bug fix
 
 * Fixing missing Tus-Resumable headers in all requests

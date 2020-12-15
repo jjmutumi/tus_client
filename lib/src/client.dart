@@ -71,7 +71,7 @@ class TusClient {
 
   /// Create a new [upload] throwing [ProtocolException] on server error
   create() async {
-    _fileSize = await file.length();
+    _fileSize = file.lengthSync();
 
     final client = getHttpClient();
     final createHeaders = Map<String, String>.from(headers ?? {})
@@ -104,7 +104,7 @@ class TusClient {
   /// Check if possible to resume an already started upload throwing
   ///  [FingerprintNotFoundException] or [ResumingNotEnabledException]
   resume() async {
-    _fileSize = await file.length();
+    _fileSize = file.lengthSync();
 
     if (!resumingEnabled) {
       throw ResumingNotEnabledException();

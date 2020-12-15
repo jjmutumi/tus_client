@@ -93,6 +93,9 @@ class TusClient {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");
     }
+    if(urlStr.indexOf("//") == 0){
+      urlStr = "${url.scheme}:$urlStr";
+    }
 
     _uploadUrl = Uri.parse(urlStr);
     store?.set(_fingerprint, _uploadUrl);

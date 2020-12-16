@@ -71,7 +71,7 @@ class TusClient {
 
   /// Create a new [upload] throwing [ProtocolException] on server error
   create() async {
-    _fileSize = await file.length();
+    _fileSize = file.lengthSync();
 
     final client = getHttpClient();
     final createHeaders = Map<String, String>.from(headers ?? {})
@@ -93,6 +93,9 @@ class TusClient {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");
     }
+    if(urlStr.indexOf("//") == 0){
+      urlStr = "${url.scheme}:$urlStr";
+    }
 
     _uploadUrl = Uri.parse(urlStr);
     store?.set(_fingerprint, _uploadUrl);
@@ -101,7 +104,7 @@ class TusClient {
   /// Check if possible to resume an already started upload throwing
   ///  [FingerprintNotFoundException] or [ResumingNotEnabledException]
   resume() async {
-    _fileSize = await file.length();
+    _fileSize = file.lengthSync();
 
     if (!resumingEnabled) {
       throw ResumingNotEnabledException();

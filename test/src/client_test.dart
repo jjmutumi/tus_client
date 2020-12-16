@@ -128,15 +128,13 @@ main() {
   test('client_test.TusClient.resume().failure.no.store', () async {
     final client = MockTusClient(url, file);
 
-    expectLater(
-        () => client.resume(), throwsA(isA<ResumingNotEnabledException>()));
+    expect(await client.resume(), false);
   });
 
   test('client_test.TusClient.resume().failure.finger.not.found', () async {
     final client = MockTusClient(url, file, store: TusMemoryStore());
 
-    expectLater(
-        () => client.resume(), throwsA(isA<FingerprintNotFoundException>()));
+    expect(await client.resume(), false);
   });
 
   test('client_test.TusClient.upload()', () async {

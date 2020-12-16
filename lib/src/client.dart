@@ -93,7 +93,7 @@ class TusClient {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");
     }
-    if(urlStr.indexOf("//") == 0){
+    if (urlStr.indexOf("//") == 0) {
       urlStr = "${url.scheme}:$urlStr";
     }
 
@@ -101,20 +101,20 @@ class TusClient {
     store?.set(_fingerprint, _uploadUrl);
   }
 
-  /// Check if possible to resume an already started upload throwing
-  ///  [FingerprintNotFoundException] or [ResumingNotEnabledException]
-  resume() async {
+  /// Check if possible to resume an already started upload
+  Future<bool> resume() async {
     _fileSize = file.lengthSync();
 
     if (!resumingEnabled) {
-      throw ResumingNotEnabledException();
+      return false;
     }
 
     _uploadUrl = await store.get(_fingerprint);
 
     if (_uploadUrl == null) {
-      throw FingerprintNotFoundException(_fingerprint);
+      return false;
     }
+    return true;
   }
 
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
@@ -123,15 +123,8 @@ class TusClient {
     Function(double) onProgress,
     Function() onComplete,
   }) async {
-    try {
-      await resume();
-    } catch (err) {
-      if (err is FingerprintNotFoundException ||
-          err is ResumingNotEnabledException) {
-        await create();
-      } else {
-        throw err;
-      }
+    if (!await resume()) {
+      await create();
     }
 
     // get offset from server

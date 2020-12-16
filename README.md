@@ -53,9 +53,16 @@ await client.upload(
 
 ### Using Persistent URL Store
 
+This is only supported on Flutter Android, iOS and desktop, i.e. **not web**.
+You need to add to your `pubspec.yaml`:
+
+```yaml
+tus_client_file_store
+```
+
 ```dart
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:tus_client_file_store/tus_client_file_store.dart' show TusFileStore;
 import 'package:path/path.dart' as p;
 
 // Directory the current uploads will be saved in

@@ -27,8 +27,10 @@ A tus client in pure dart. [Resumable uploads using tus protocol](https://tus.io
 ## Usage
 
 ```dart
+import 'package:cross_file/cross_file.dart' show XFile;
+
 // File to be uploaded
-final file = File("/path/to/my/pic.jpg");
+final file = XFile("/path/to/my/pic.jpg");
 
 // Create a client
 final client = TusClient(

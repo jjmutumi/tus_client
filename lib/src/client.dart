@@ -1,10 +1,10 @@
 import 'dart:convert' show base64, utf8;
-import 'dart:io' show File, FileMode;
 import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List;
 import 'exceptions.dart';
 import 'store.dart';
 
+import 'package:cross_file/cross_file.dart' show XFile;
 import 'package:http/http.dart' as http;
 import "package:path/path.dart" as p;
 
@@ -20,7 +20,7 @@ class TusClient {
   /// Storage used to save and retrieve upload URLs by its fingerprint.
   final TusStore store;
 
-  final File file;
+  final XFile file;
 
   final Map<String, String> metadata;
 
@@ -71,7 +71,7 @@ class TusClient {
 
   /// Create a new [upload] throwing [ProtocolException] on server error
   create() async {
-    _fileSize = file.lengthSync();
+    _fileSize = await file.length();
 
     final client = getHttpClient();
     final createHeaders = Map<String, String>.from(headers ?? {})
@@ -103,7 +103,7 @@ class TusClient {
 
   /// Check if possible to resume an already started upload
   Future<bool> resume() async {
-    _fileSize = file.lengthSync();
+    _fileSize = await file.length();
 
     if (!resumingEnabled) {
       return false;
@@ -190,7 +190,7 @@ class TusClient {
 
   /// Override this method to customize creating file fingerprint
   String generateFingerprint() {
-    return file.absolute.path.replaceAll(RegExp(r"\W+"), '.');
+    return file.path.replaceAll(RegExp(r"\W+"), '.');
   }
 
   /// Override this to customize creating 'Upload-Metadata'
@@ -232,15 +232,14 @@ class TusClient {
 
   /// Get data from file to upload
   Future<Uint8List> _getData() async {
-    final f = await file.open(mode: FileMode.read);
-    await f.setPosition(_offset);
-    final bytesRead = min(maxChunkSize, _fileSize - _offset);
+    final start = _offset, end = _offset + maxChunkSize;
+    final fileChunk = await file
+        .openRead(start, end)
+        .reduce((previous, element) => previous..addAll(element));
+
+    final bytesRead = min(maxChunkSize, fileChunk.length);
     _offset += bytesRead;
-    try {
-      return await f.read(bytesRead);
-    } finally {
-      await f.close();
-    }
+    return fileChunk;
   }
 
   int _parseOffset(String offset) {

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart' show XFile;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' show join, basename;
@@ -31,7 +32,7 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage> {
   double _progress = 0;
-  File _file;
+  XFile _file;
   TusClient _client;
   Uri _fileUrl;
 
@@ -174,20 +175,22 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   /// Copy file to temporary directory before uploading
-  Future<File> _copyToTemp(File chosenFile) async {
+  Future<XFile> _copyToTemp(File chosenFile) async {
     if (chosenFile != null) {
-      Directory tempDir = await getTemporaryDirectory();
+      final tempDir = await getTemporaryDirectory();
       String newPath = join(tempDir.path, basename(chosenFile.path));
-      print("Chosen file: ${chosenFile.absolute.path}");
+      print("Chosen file: ${chosenFile.path}");
       print("Temp file: $newPath");
-      return await chosenFile.copy(newPath);
+      await chosenFile.copy(newPath);
+      return XFile(newPath);
     }
-    return chosenFile;
+    return null;
   }
 
   /// clear file from temporary directory after uploading
   _clearFromTemp() async {
-    await _file?.delete();
+    final f = File(_file.path);
+    await f?.delete();
     setState(() => _file = null);
   }
 }

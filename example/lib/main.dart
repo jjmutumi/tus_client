@@ -56,8 +56,8 @@ class _UploadPageState extends State<UploadPage> {
                 color: Colors.teal,
                 child: InkWell(
                   onTap: () async {
-                    _file = await _copyToTemp(
-                        await FilePicker.platform.pickFiles());
+                    _file =
+                        await _getXFile(await FilePicker.platform.pickFiles());
                     setState(() {
                       _progress = 0;
                       _fileUrl = null;
@@ -171,7 +171,7 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   /// Copy file to temporary directory before uploading
-  Future<XFile> _copyToTemp(FilePickerResult result) async {
+  Future<XFile> _getXFile(FilePickerResult result) async {
     if (result != null) {
       final chosenFile = result.files.first;
       if (chosenFile.path != null) {

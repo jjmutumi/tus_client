@@ -59,7 +59,9 @@ This is only supported on Flutter Android, iOS and desktop, i.e. **not web**.
 You need to add to your `pubspec.yaml`:
 
 ```yaml
-tus_client_file_store
+dependencies:
+  tus_client: ^0.1.1
+  tus_client_file_store: ^0.0.3
 ```
 
 ```dart

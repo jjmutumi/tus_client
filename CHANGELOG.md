@@ -1,3 +1,7 @@
+## [0.1.1] - Better file persistence documentation
+
+* Have better documentation on using tus_client_file_store
+
 ## [0.1.0] - Web support
 
 * This is update breaks backwards compatibility

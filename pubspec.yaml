@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cross_file: ^0.1.0
   http: ^0.12.2
   path: ^1.7.0
 
@@ -16,4 +17,3 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^4.1.1
-

@@ -1,10 +1,6 @@
-import 'dart:io';
-
 import 'package:cross_file/cross_file.dart' show XFile;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' show join, basename;
-import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
 import 'package:tus_client/tus_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -60,7 +56,8 @@ class _UploadPageState extends State<UploadPage> {
                 color: Colors.teal,
                 child: InkWell(
                   onTap: () async {
-                    _file = await _copyToTemp(await FilePicker.getFile());
+                    _file = await _copyToTemp(
+                        await FilePicker.platform.pickFiles());
                     setState(() {
                       _progress = 0;
                       _fileUrl = null;
@@ -102,7 +99,6 @@ class _UploadPageState extends State<UploadPage> {
                               await _client.upload(
                                 onComplete: () async {
                                   print("Completed!");
-                                  await _clearFromTemp();
                                   setState(() => _fileUrl = _client.uploadUrl);
                                 },
                                 onProgress: (progress) {
@@ -175,22 +171,20 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   /// Copy file to temporary directory before uploading
-  Future<XFile> _copyToTemp(File chosenFile) async {
-    if (chosenFile != null) {
-      final tempDir = await getTemporaryDirectory();
-      String newPath = join(tempDir.path, basename(chosenFile.path));
-      print("Chosen file: ${chosenFile.path}");
-      print("Temp file: $newPath");
-      await chosenFile.copy(newPath);
-      return XFile(newPath);
+  Future<XFile> _copyToTemp(FilePickerResult result) async {
+    if (result != null) {
+      final chosenFile = result.files.first;
+      if (chosenFile.path != null) {
+        // Android, iOS, Desktop
+        return XFile(chosenFile.path);
+      } else {
+        // Web
+        return XFile.fromData(
+          chosenFile.bytes,
+          name: chosenFile.name,
+        );
+      }
     }
     return null;
-  }
-
-  /// clear file from temporary directory after uploading
-  _clearFromTemp() async {
-    final f = File(_file.path);
-    await f?.delete();
-    setState(() => _file = null);
   }
 }

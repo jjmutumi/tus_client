@@ -1,3 +1,9 @@
+## [0.1.0] - Web support
+
+* This is update breaks backwards compatibility
+* Adding cross_file Flutter plugin to manage reading files across platforms
+* Refactoring example to show use with XFile on Android/iOS vs web
+
 ## [0.0.4] - Feature request
 
 * Changing example by adding copying file to be uploaded to application temp directory before uploading

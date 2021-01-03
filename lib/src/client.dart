@@ -232,10 +232,10 @@ class TusClient {
 
   /// Get data from file to upload
   Future<Uint8List> _getData() async {
-    final start = _offset, end = _offset + maxChunkSize;
-    final fileChunk = await file
-        .openRead(start, end)
-        .reduce((previous, element) => previous..addAll(element));
+    int start = _offset;
+    int end = _offset + maxChunkSize;
+    end = end > _fileSize ? _fileSize : end;
+    final fileChunk = await file.openRead(start, end).first;
 
     final bytesRead = min(maxChunkSize, fileChunk.length);
     _offset += bytesRead;

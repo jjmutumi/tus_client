@@ -30,6 +30,10 @@ class TusClient {
   /// The maximum payload size in bytes when uploading the file in chunks (512KB)
   final int maxChunkSize;
 
+  /// Skips the create (post) part so it starts patching immediately
+  /// Used for when a post has already been made manually
+  final bool skipCreate;
+
   int _fileSize;
 
   String _fingerprint;
@@ -49,6 +53,7 @@ class TusClient {
     this.headers,
     this.metadata = const {},
     this.maxChunkSize = 512 * 1024,
+    this.skipCreate = false,
   }) {
     _fingerprint = generateFingerprint();
     _uploadMetadata = generateMetadata();
@@ -73,31 +78,36 @@ class TusClient {
   create() async {
     _fileSize = await file.length();
 
-    final client = getHttpClient();
-    final createHeaders = Map<String, String>.from(headers ?? {})
-      ..addAll({
-        "Tus-Resumable": tusVersion,
-        "Upload-Metadata": _uploadMetadata,
-        "Upload-Length": "$_fileSize",
-      });
+    if (skipCreate) {
+      _uploadUrl = url;
+    } else {
+      final client = getHttpClient();
+      final createHeaders = Map<String, String>.from(headers ?? {})
+        ..addAll({
+          "Tus-Resumable": tusVersion,
+          "Upload-Metadata": _uploadMetadata,
+          "Upload-Length": "$_fileSize",
+        });
 
-    final response = await client.post(url, headers: createHeaders);
-    if (!(response.statusCode >= 200 && response.statusCode < 300) &&
-        response.statusCode != 404) {
-      throw ProtocolException(
-          "unexpected status code (${response.statusCode}) while creating upload");
+      final response = await client.post(url, headers: createHeaders);
+      if (!(response.statusCode >= 200 && response.statusCode < 300) &&
+          response.statusCode != 404) {
+        throw ProtocolException(
+            "unexpected status code (${response.statusCode}) while creating upload");
+      }
+
+      String urlStr = response.headers["location"];
+      if (urlStr == null || urlStr.isEmpty) {
+        throw ProtocolException(
+            "missing upload Uri in response for creating upload");
+      }
+      if (urlStr.indexOf("//") == 0) {
+        urlStr = "${url.scheme}:$urlStr";
+      }
+
+      _uploadUrl = Uri.parse(urlStr);
     }
 
-    String urlStr = response.headers["location"];
-    if (urlStr == null || urlStr.isEmpty) {
-      throw ProtocolException(
-          "missing upload Uri in response for creating upload");
-    }
-    if (urlStr.indexOf("//") == 0) {
-      urlStr = "${url.scheme}:$urlStr";
-    }
-
-    _uploadUrl = Uri.parse(urlStr);
     store?.set(_fingerprint, _uploadUrl);
   }
 

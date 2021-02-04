@@ -42,6 +42,8 @@ class TusClient {
 
   bool _pauseUpload = false;
 
+  Future _chunkPatchFuture;
+
   TusClient(
     this.url,
     this.file, {
@@ -142,11 +144,13 @@ class TusClient {
           "Upload-Offset": "$_offset",
           "Content-Type": "application/offset+octet-stream"
         });
-      final response = await client.patch(
+      _chunkPatchFuture = client.patch(
         _uploadUrl,
         headers: uploadHeaders,
         body: await _getData(),
       );
+      final response = await _chunkPatchFuture;
+      _chunkPatchFuture = null;
 
       // check if correctly uploaded
       if (!(response.statusCode >= 200 && response.statusCode < 300)) {
@@ -181,6 +185,9 @@ class TusClient {
   /// Pause the current upload
   pause() {
     _pauseUpload = true;
+    if (_chunkPatchFuture != null) {
+      _chunkPatchFuture.timeout(Duration.zero, onTimeout: () {});
+    }
   }
 
   /// Actions to be performed after a successful upload

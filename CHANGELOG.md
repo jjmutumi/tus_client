@@ -1,3 +1,10 @@
+## [0.1.2] - Many improvements
+
+* Fixing server returns partial url & double header.
+* Fixing immediate pause even when uploading with large chunks by timing out the future
+* Removing unused exceptions (deadcode)
+* Updating dependencies
+
 ## [0.1.1] - Better file persistence documentation
 
 * Have better documentation on using tus_client_file_store

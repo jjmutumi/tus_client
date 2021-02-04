@@ -90,6 +90,57 @@ main() {
         contains('Tus-Resumable'));
   });
 
+  test('client_test.TusClient.create().no.scheme', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async => http.Response("", 201, headers: {
+              "location":
+                  "//example.com/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
+            }));
+
+    await client.create();
+
+    expect(client.uploadUrl.toString(), equals(uploadLocation));
+    expect(
+        verify(client.httpClient.post(url, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+  });
+
+  test('client_test.TusClient.create().no.host', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async => http.Response("", 201, headers: {
+              "location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
+            }));
+
+    await client.create();
+
+    expect(client.uploadUrl.toString(), equals(uploadLocation));
+    expect(
+        verify(client.httpClient.post(url, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+  });
+
+  test('client_test.TusClient.create().double.header', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async => http.Response("", 201,
+            headers: {"location": "$uploadLocation,$uploadLocation"}));
+
+    await client.create();
+
+    expect(client.uploadUrl.toString(), equals(uploadLocation));
+    expect(
+        verify(client.httpClient.post(url, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+  });
+
   test('client_test.TusClient.create().failure.empty.location', () async {
     final client = MockTusClient(url, file);
     when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
@@ -151,6 +202,45 @@ main() {
       body: anyNamed('body'),
     )).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "100"}));
+
+    bool success = false;
+    double progress;
+    await client.upload(
+        onComplete: () => success = true, onProgress: (p) => progress = p);
+
+    expect(success, isTrue);
+    expect(progress, equals(100));
+    expect(
+        verify(client.httpClient.post(any, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+    expect(
+        verify(client.httpClient.head(any, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+    expect(
+        verify(client.httpClient.patch(any,
+                headers: captureAnyNamed('headers'), body: anyNamed('body')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+  });
+
+  test('client_test.TusClient.upload().double.header', () async {
+    final client = MockTusClient(url, file);
+    when(client.httpClient.post(url, headers: anyNamed('headers'))).thenAnswer(
+        (_) async =>
+            http.Response("", 201, headers: {"location": uploadLocation}));
+    when(client.httpClient.head(any, headers: anyNamed('headers'))).thenAnswer(
+        (_) async => http.Response("", 200, headers: {"upload-offset": "0,0"}));
+    when(client.httpClient.patch(
+      any,
+      headers: anyNamed('headers'),
+      body: anyNamed('body'),
+    )).thenAnswer((_) async =>
+        http.Response("", 204, headers: {"upload-offset": "100,100"}));
 
     bool success = false;
     double progress;

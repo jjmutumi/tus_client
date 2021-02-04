@@ -95,11 +95,8 @@ class TusClient {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");
     }
-    if (urlStr.indexOf("//") == 0) {
-      urlStr = "${url.scheme}:$urlStr";
-    }
 
-    _uploadUrl = Uri.parse(urlStr);
+    _uploadUrl = _parseUrl(urlStr);
     store?.set(_fingerprint, _uploadUrl);
   }
 
@@ -255,5 +252,19 @@ class TusClient {
       offset = offset.substring(0, offset.indexOf(","));
     }
     return int.tryParse(offset ?? "");
+  }
+
+  Uri _parseUrl(String urlStr) {
+    if (urlStr?.contains(",") ?? false) {
+      urlStr = urlStr.substring(0, urlStr.indexOf(","));
+    }
+    Uri uploadUrl = Uri.parse(urlStr);
+    if (uploadUrl.host.isEmpty) {
+      uploadUrl = uploadUrl.replace(host: url.host);
+    }
+    if (uploadUrl.scheme.isEmpty) {
+      uploadUrl = uploadUrl.replace(scheme: url.scheme);
+    }
+    return uploadUrl;
   }
 }

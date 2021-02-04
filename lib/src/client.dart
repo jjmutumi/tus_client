@@ -106,6 +106,7 @@ class TusClient {
   /// Check if possible to resume an already started upload
   Future<bool> resume() async {
     _fileSize = await file.length();
+    _pauseUpload = false;
 
     if (!resumingEnabled) {
       return false;

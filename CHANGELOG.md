@@ -1,3 +1,8 @@
+## [0.1.3] - Updating dependencies
+
+* Updating dependencies
+* Removing deadcode
+
 ## [0.1.2] - Many improvements
 
 * Fixing server returns partial url & double header.

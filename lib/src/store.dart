@@ -10,7 +10,7 @@ abstract class TusStore {
 
   /// Retrieve an upload's Uri for a [fingerprint].
   /// If no matching entry is found this method will return `null`.
-  Future<Uri> get(String fingerprint);
+  Future<Uri?> get(String fingerprint);
 
   /// Remove an entry from the store using an upload's [fingerprint].
   Future<void> remove(String fingerprint);
@@ -32,7 +32,7 @@ class TusMemoryStore implements TusStore {
   }
 
   @override
-  Future<Uri> get(String fingerprint) async {
+  Future<Uri?> get(String fingerprint) async {
     return store[fingerprint];
   }
 

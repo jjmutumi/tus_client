@@ -1,6 +1,8 @@
 name: example
 description: A example tus client Flutter project.
 
+publish_to: none
+
 version: 1.0.0+1
 
 environment:

@@ -1,3 +1,9 @@
+## [1.0.0] - Migrating to null safety
+
+* Making null safe
+* Increasing minimum Dart SDK
+* Fixing deprecated APIs
+
 ## [0.1.3] - Updating dependencies
 
 * Updating dependencies

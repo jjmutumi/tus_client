@@ -1,6 +1,6 @@
 import 'dart:convert' show base64, utf8;
 import 'dart:math' show min;
-import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data' show Uint8List, BytesBuilder;
 import 'exceptions.dart';
 import 'store.dart';
 
@@ -234,16 +234,23 @@ class TusClient {
     return serverOffset;
   }
 
+
   /// Get data from file to upload
+
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
     int end = (_offset ?? 0) + maxChunkSize;
     end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
-    final fileChunk = await file.openRead(start, end).first;
 
-    final bytesRead = min(maxChunkSize, fileChunk.length);
+    final result = BytesBuilder();
+    await for (final chunk in file.openRead(start, end)) {
+      result.add(chunk);
+    }
+
+    final bytesRead = min(maxChunkSize, result.length);
     _offset = (_offset ?? 0) + bytesRead;
-    return fileChunk;
+
+    return result.takeBytes();
   }
 
   int? _parseOffset(String? offset) {

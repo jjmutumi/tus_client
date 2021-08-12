@@ -13,9 +13,9 @@ dependencies:
     sdk: flutter
   tus_client:
     path: ../
-  cross_file: ^0.3.0
-  file_picker: ^2.1.4
-  url_launcher: ^5.7.10
+  cross_file: ^0.3.1+4
+  file_picker: ^4.0.0
+  url_launcher: ^6.0.9
 
 dev_dependencies:
   flutter_test:

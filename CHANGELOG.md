@@ -1,3 +1,9 @@
+## [1.0.1] - Fixing custom chunk size
+
+* Fixing handling file as chunks correctly
+* Fixing null safety warnings
+* Updating dependencies
+
 ## [1.0.0] - Migrating to null safety
 
 * Making null safe

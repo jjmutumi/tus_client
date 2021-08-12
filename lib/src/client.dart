@@ -193,7 +193,7 @@ class TusClient {
 
   /// Override this method to customize creating file fingerprint
   String? generateFingerprint() {
-    return file.path?.replaceAll(RegExp(r"\W+"), '.');
+    return file.path.replaceAll(RegExp(r"\W+"), '.');
   }
 
   /// Override this to customize creating 'Upload-Metadata'
@@ -201,7 +201,7 @@ class TusClient {
     final meta = Map<String, String>.from(metadata ?? {});
 
     if (!meta.containsKey("filename")) {
-      meta["filename"] = p.basename(file.path ?? "");
+      meta["filename"] = p.basename(file.path);
     }
 
     return meta.entries

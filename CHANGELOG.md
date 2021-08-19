@@ -1,3 +1,8 @@
+## [1.0.2] - Fixed issue with not parsing the http port number 
+
+* Fixed issue with not parsing the http port number 
+* Fixing formatting
+
 ## [1.0.1] - Fixing custom chunk size
 
 * Fixing handling file as chunks correctly

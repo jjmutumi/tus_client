@@ -60,7 +60,7 @@ You need to add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tus_client: ^1.0.1
+  tus_client: ^1.0.2
   tus_client_file_store: ^0.0.3
 ```
 

@@ -234,7 +234,6 @@ class TusClient {
     return serverOffset;
   }
 
-
   /// Get data from file to upload
 
   Future<Uint8List> _getData() async {
@@ -269,7 +268,7 @@ class TusClient {
     }
     Uri uploadUrl = Uri.parse(urlStr);
     if (uploadUrl.host.isEmpty) {
-      uploadUrl = uploadUrl.replace(host: url.host);
+      uploadUrl = uploadUrl.replace(host: url.host, port: url.port);
     }
     if (uploadUrl.scheme.isEmpty) {
       uploadUrl = uploadUrl.replace(scheme: url.scheme);

@@ -39,6 +39,9 @@ main() {
   final url = Uri.parse("https://example.com/tus");
   final uploadLocation =
       "https://example.com/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6";
+  final urlWithPort = Uri.parse("https://example.com:1234/tus");
+  final uploadLocationWithPort =
+      "https://example.com:1234/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6";
 
   setUpAll(() {
     file = _createTestFile("test.txt");
@@ -124,6 +127,24 @@ main() {
     expect(
         verify(client.httpClient
                 ?.post(url, headers: captureAnyNamed('headers')))
+            .captured
+            .first,
+        contains('Tus-Resumable'));
+  });
+
+  test('client_test.TusClient.create().no.host.with.port', () async {
+    final client = MockTusClient(urlWithPort, file);
+    when(client.httpClient?.post(urlWithPort, headers: anyNamed('headers')))
+        .thenAnswer((_) async => http.Response("", 201, headers: {
+              "location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
+            }));
+
+    await client.create();
+
+    expect(client.uploadUrl.toString(), equals(uploadLocationWithPort));
+    expect(
+        verify(client.httpClient
+                ?.post(urlWithPort, headers: captureAnyNamed('headers')))
             .captured
             .first,
         contains('Tus-Resumable'));

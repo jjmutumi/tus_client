@@ -1,4 +1,4 @@
-import 'dart:convert' show base64, utf8;
+import 'dart:convert' show base64, jsonEncode, utf8;
 import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 import 'exceptions.dart';
@@ -27,6 +27,9 @@ class TusClient {
   /// Any additional headers
   final Map<String, String>? headers;
 
+  //body for POST initialization request
+  final Map<String, dynamic>? body;
+
   /// The maximum payload size in bytes when uploading the file in chunks (512KB)
   final int maxChunkSize;
 
@@ -51,6 +54,7 @@ class TusClient {
     this.headers,
     this.metadata = const {},
     this.maxChunkSize = 512 * 1024,
+    this.body,
   }) {
     _fingerprint = generateFingerprint() ?? "";
     _uploadMetadata = generateMetadata();
@@ -72,7 +76,7 @@ class TusClient {
   http.Client getHttpClient() => http.Client();
 
   /// Create a new [upload] throwing [ProtocolException] on server error
-  create() async {
+  Future<void> create() async {
     _fileSize = await file.length();
 
     final client = getHttpClient();
@@ -83,17 +87,16 @@ class TusClient {
         "Upload-Length": "$_fileSize",
       });
 
-    final response = await client.post(url, headers: createHeaders);
-    if (!(response.statusCode >= 200 && response.statusCode < 300) &&
-        response.statusCode != 404) {
+    final response = await client.post(url,
+        headers: createHeaders, body: body != null ? jsonEncode(body) : null);
+    if (!(response.statusCode >= 200 && response.statusCode < 300) && response.statusCode != 404) {
       throw ProtocolException(
           "unexpected status code (${response.statusCode}) while creating upload");
     }
 
     String urlStr = response.headers["location"] ?? "";
     if (urlStr.isEmpty) {
-      throw ProtocolException(
-          "missing upload Uri in response for creating upload");
+      throw ProtocolException("missing upload Uri in response for creating upload");
     }
 
     _uploadUrl = _parseUrl(urlStr);
@@ -205,8 +208,7 @@ class TusClient {
     }
 
     return meta.entries
-        .map((entry) =>
-            entry.key + " " + base64.encode(utf8.encode(entry.value)))
+        .map((entry) => entry.key + " " + base64.encode(utf8.encode(entry.value)))
         .join(",");
   }
 
@@ -218,8 +220,7 @@ class TusClient {
       ..addAll({
         "Tus-Resumable": tusVersion,
       });
-    final response =
-        await client.head(_uploadUrl as Uri, headers: offsetHeaders);
+    final response = await client.head(_uploadUrl as Uri, headers: offsetHeaders);
 
     if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(
@@ -228,8 +229,7 @@ class TusClient {
 
     int? serverOffset = _parseOffset(response.headers["upload-offset"]);
     if (serverOffset == null) {
-      throw ProtocolException(
-          "missing upload offset in response for resuming upload");
+      throw ProtocolException("missing upload offset in response for resuming upload");
     }
     return serverOffset;
   }

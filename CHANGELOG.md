@@ -1,3 +1,7 @@
+## [1.0.3] - body in post request
+
+* post in initialization request
+
 ## [1.0.2] - Fixed issue with not parsing the http port number 
 
 * Fixed issue with not parsing the http port number 

@@ -33,13 +33,13 @@ class TusClient {
   /// The maximum payload size in bytes when uploading the file in chunks (512KB)
   final int maxChunkSize;
 
-  int? _fileSize;
+  int? fileSize;
 
   String _fingerprint = "";
 
   String? _uploadMetadata;
 
-  Uri? _uploadUrl;
+  Uri? uploadUrl;
 
   int? _offset;
 
@@ -63,8 +63,6 @@ class TusClient {
   /// Whether the client supports resuming
   bool get resumingEnabled => store != null;
 
-  /// The URI on the server for the file
-  Uri? get uploadUrl => _uploadUrl;
 
   /// The fingerprint of the file being uploaded
   String get fingerprint => _fingerprint;
@@ -76,49 +74,7 @@ class TusClient {
   http.Client getHttpClient() => http.Client();
 
   /// Create a new [upload] throwing [ProtocolException] on server error
-  Future<void> create() async {
-    _fileSize = await file.length();
 
-    final client = getHttpClient();
-    final createHeaders = Map<String, String>.from(headers ?? {})
-      ..addAll({
-        "Tus-Resumable": tusVersion,
-        "Upload-Metadata": _uploadMetadata ?? "",
-        "Upload-Length": "$_fileSize",
-      });
-
-    final response = await client.post(url,
-        headers: createHeaders, body: body != null ? jsonEncode(body) : null);
-    if (!(response.statusCode >= 200 && response.statusCode < 300) && response.statusCode != 404) {
-      throw ProtocolException(
-          "unexpected status code (${response.statusCode}) while creating upload");
-    }
-
-    String urlStr = response.headers["location"] ?? "";
-    if (urlStr.isEmpty) {
-      throw ProtocolException("missing upload Uri in response for creating upload");
-    }
-
-    _uploadUrl = _parseUrl(urlStr);
-    store?.set(_fingerprint, _uploadUrl as Uri);
-  }
-
-  /// Check if possible to resume an already started upload
-  Future<bool> resume() async {
-    _fileSize = await file.length();
-    _pauseUpload = false;
-
-    if (!resumingEnabled) {
-      return false;
-    }
-
-    _uploadUrl = await store?.get(_fingerprint);
-
-    if (_uploadUrl == null) {
-      return false;
-    }
-    return true;
-  }
 
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
@@ -126,14 +82,11 @@ class TusClient {
     Function(double)? onProgress,
     Function()? onComplete,
   }) async {
-    if (!await resume()) {
-      await create();
-    }
 
     // get offset from server
     _offset = await _getOffset();
 
-    int totalBytes = _fileSize as int;
+    int totalBytes = fileSize as int;
 
     // start upload
     final client = getHttpClient();
@@ -146,7 +99,7 @@ class TusClient {
           "Content-Type": "application/offset+octet-stream"
         });
       _chunkPatchFuture = client.patch(
-        _uploadUrl as Uri,
+        uploadUrl as Uri,
         headers: uploadHeaders,
         body: await _getData(),
       );
@@ -220,7 +173,7 @@ class TusClient {
       ..addAll({
         "Tus-Resumable": tusVersion,
       });
-    final response = await client.head(_uploadUrl as Uri, headers: offsetHeaders);
+    final response = await client.head(uploadUrl as Uri, headers: offsetHeaders);
 
     if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(
@@ -239,7 +192,7 @@ class TusClient {
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
     int end = (_offset ?? 0) + maxChunkSize;
-    end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
+    end = end > (fileSize ?? 0) ? fileSize ?? 0 : end;
 
     final result = BytesBuilder();
     await for (final chunk in file.openRead(start, end)) {

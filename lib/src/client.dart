@@ -20,7 +20,9 @@ class TusClient {
   /// Storage used to save and retrieve upload URLs by its fingerprint.
   final TusStore? store;
 
-  final XFile file;
+  final XFile? file;
+
+  final Stream<List<int>>? fileStream;
 
   final Map<String, String>? metadata;
 
@@ -48,8 +50,9 @@ class TusClient {
   Future? _chunkPatchFuture;
 
   TusClient(
-    this.url,
-    this.file, {
+    this.url, {
+    this.file,
+    this.fileStream,
     this.store,
     this.headers,
     this.metadata = const {},
@@ -63,7 +66,6 @@ class TusClient {
   /// Whether the client supports resuming
   bool get resumingEnabled => store != null;
 
-
   /// The fingerprint of the file being uploaded
   String get fingerprint => _fingerprint;
 
@@ -75,14 +77,12 @@ class TusClient {
 
   /// Create a new [upload] throwing [ProtocolException] on server error
 
-
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
   upload({
     Function(double)? onProgress,
     Function()? onComplete,
   }) async {
-
     // get offset from server
     _offset = await _getOffset();
 
@@ -98,11 +98,32 @@ class TusClient {
           "Upload-Offset": "$_offset",
           "Content-Type": "application/offset+octet-stream"
         });
-      _chunkPatchFuture = client.patch(
-        uploadUrl as Uri,
-        headers: uploadHeaders,
-        body: await _getData(),
-      );
+      if(file != null){
+        _chunkPatchFuture = client.patch(
+          uploadUrl as Uri,
+          headers: uploadHeaders,
+          body: await _getData(),
+        );
+      }else if(fileStream != null){
+        int start = _offset ?? 0;
+        int end = (_offset ?? 0) + maxChunkSize;
+        end = end > (fileSize ?? 0) ? fileSize ?? 0 : end;
+
+        final result = BytesBuilder();
+        await for (final chunk in fileStream!) {
+          result.add(chunk);
+        }
+
+        final bytesRead = min(maxChunkSize, result.length);
+        _offset = (_offset ?? 0) + bytesRead;
+
+        return result.takeBytes();
+
+
+      }else{
+        throw Error();
+      }
+
       final response = await _chunkPatchFuture;
       _chunkPatchFuture = null;
 
@@ -149,7 +170,7 @@ class TusClient {
 
   /// Override this method to customize creating file fingerprint
   String? generateFingerprint() {
-    return file.path.replaceAll(RegExp(r"\W+"), '.');
+    return file!.path.replaceAll(RegExp(r"\W+"), '.');
   }
 
   /// Override this to customize creating 'Upload-Metadata'
@@ -157,7 +178,7 @@ class TusClient {
     final meta = Map<String, String>.from(metadata ?? {});
 
     if (!meta.containsKey("filename")) {
-      meta["filename"] = p.basename(file.path);
+      meta["filename"] = p.basename(file!.path);
     }
 
     return meta.entries
@@ -195,7 +216,7 @@ class TusClient {
     end = end > (fileSize ?? 0) ? fileSize ?? 0 : end;
 
     final result = BytesBuilder();
-    await for (final chunk in file.openRead(start, end)) {
+    await for (final chunk in file!.openRead(start, end)) {
       result.add(chunk);
     }
 

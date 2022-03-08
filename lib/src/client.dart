@@ -37,7 +37,7 @@ class TusClient {
 
   int? fileSize;
 
-  String _fingerprint = "";
+  // String _fingerprint = "";
 
   String? _uploadMetadata;
 
@@ -59,7 +59,7 @@ class TusClient {
     this.maxChunkSize = 512 * 1024,
     this.body,
   }) {
-    _fingerprint = generateFingerprint() ?? "";
+    // _fingerprint = generateFingerprint() ?? "";
     _uploadMetadata = generateMetadata();
   }
 
@@ -67,7 +67,7 @@ class TusClient {
   bool get resumingEnabled => store != null;
 
   /// The fingerprint of the file being uploaded
-  String get fingerprint => _fingerprint;
+  // String get fingerprint => _fingerprint;
 
   /// The 'Upload-Metadata' header sent to server
   String get uploadMetadata => _uploadMetadata ?? "";
@@ -165,7 +165,7 @@ class TusClient {
 
   /// Actions to be performed after a successful upload
   void onComplete() {
-    store?.remove(_fingerprint);
+    // store?.remove(_fingerprint);
   }
 
   /// Override this method to customize creating file fingerprint

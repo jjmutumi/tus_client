@@ -1,4 +1,4 @@
-import 'dart:convert' show base64, utf8;
+import 'dart:convert' show base64, jsonEncode, utf8;
 import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 import 'exceptions.dart';
@@ -20,23 +20,28 @@ class TusClient {
   /// Storage used to save and retrieve upload URLs by its fingerprint.
   final TusStore? store;
 
-  final XFile file;
+  final XFile? file;
+
+  final Stream<List<int>>? fileStream;
 
   final Map<String, String>? metadata;
 
   /// Any additional headers
   final Map<String, String>? headers;
 
+  //body for POST initialization request
+  final Map<String, dynamic>? body;
+
   /// The maximum payload size in bytes when uploading the file in chunks (512KB)
   final int maxChunkSize;
 
-  int? _fileSize;
+  int? fileSize;
 
-  String _fingerprint = "";
+  // String _fingerprint = "";
 
-  String? _uploadMetadata;
+  // String? _uploadMetadata;
 
-  Uri? _uploadUrl;
+  Uri? uploadUrl;
 
   int? _offset;
 
@@ -45,77 +50,32 @@ class TusClient {
   Future? _chunkPatchFuture;
 
   TusClient(
-    this.url,
-    this.file, {
+    this.url, {
+    this.file,
+    this.fileStream,
     this.store,
     this.headers,
     this.metadata = const {},
     this.maxChunkSize = 512 * 1024,
+    this.body,
   }) {
-    _fingerprint = generateFingerprint() ?? "";
-    _uploadMetadata = generateMetadata();
+    // _fingerprint = generateFingerprint() ?? "";
+    // _uploadMetadata = generateMetadata();
   }
 
   /// Whether the client supports resuming
   bool get resumingEnabled => store != null;
 
-  /// The URI on the server for the file
-  Uri? get uploadUrl => _uploadUrl;
-
   /// The fingerprint of the file being uploaded
-  String get fingerprint => _fingerprint;
+  // String get fingerprint => _fingerprint;
 
   /// The 'Upload-Metadata' header sent to server
-  String get uploadMetadata => _uploadMetadata ?? "";
+  // String get uploadMetadata => _uploadMetadata ?? "";
 
   /// Override this method to use a custom Client
   http.Client getHttpClient() => http.Client();
 
   /// Create a new [upload] throwing [ProtocolException] on server error
-  create() async {
-    _fileSize = await file.length();
-
-    final client = getHttpClient();
-    final createHeaders = Map<String, String>.from(headers ?? {})
-      ..addAll({
-        "Tus-Resumable": tusVersion,
-        "Upload-Metadata": _uploadMetadata ?? "",
-        "Upload-Length": "$_fileSize",
-      });
-
-    final response = await client.post(url, headers: createHeaders);
-    if (!(response.statusCode >= 200 && response.statusCode < 300) &&
-        response.statusCode != 404) {
-      throw ProtocolException(
-          "unexpected status code (${response.statusCode}) while creating upload");
-    }
-
-    String urlStr = response.headers["location"] ?? "";
-    if (urlStr.isEmpty) {
-      throw ProtocolException(
-          "missing upload Uri in response for creating upload");
-    }
-
-    _uploadUrl = _parseUrl(urlStr);
-    store?.set(_fingerprint, _uploadUrl as Uri);
-  }
-
-  /// Check if possible to resume an already started upload
-  Future<bool> resume() async {
-    _fileSize = await file.length();
-    _pauseUpload = false;
-
-    if (!resumingEnabled) {
-      return false;
-    }
-
-    _uploadUrl = await store?.get(_fingerprint);
-
-    if (_uploadUrl == null) {
-      return false;
-    }
-    return true;
-  }
 
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
@@ -123,14 +83,10 @@ class TusClient {
     Function(double)? onProgress,
     Function()? onComplete,
   }) async {
-    if (!await resume()) {
-      await create();
-    }
-
     // get offset from server
     _offset = await _getOffset();
 
-    int totalBytes = _fileSize as int;
+    int totalBytes = fileSize as int;
 
     // start upload
     final client = getHttpClient();
@@ -142,11 +98,32 @@ class TusClient {
           "Upload-Offset": "$_offset",
           "Content-Type": "application/offset+octet-stream"
         });
-      _chunkPatchFuture = client.patch(
-        _uploadUrl as Uri,
-        headers: uploadHeaders,
-        body: await _getData(),
-      );
+      if(file != null){
+        _chunkPatchFuture = client.patch(
+          uploadUrl as Uri,
+          headers: uploadHeaders,
+          body: await _getData(),
+        );
+      }else if(fileStream != null){
+        int start = _offset ?? 0;
+        int end = (_offset ?? 0) + maxChunkSize;
+        end = end > (fileSize ?? 0) ? fileSize ?? 0 : end;
+
+        final result = BytesBuilder();
+        await for (final chunk in fileStream!) {
+          result.add(chunk);
+        }
+
+        final bytesRead = min(maxChunkSize, result.length);
+        _offset = (_offset ?? 0) + bytesRead;
+
+        return result.takeBytes();
+
+
+      }else{
+        throw Error();
+      }
+
       final response = await _chunkPatchFuture;
       _chunkPatchFuture = null;
 
@@ -188,12 +165,12 @@ class TusClient {
 
   /// Actions to be performed after a successful upload
   void onComplete() {
-    store?.remove(_fingerprint);
+    // store?.remove(_fingerprint);
   }
 
   /// Override this method to customize creating file fingerprint
   String? generateFingerprint() {
-    return file.path.replaceAll(RegExp(r"\W+"), '.');
+    return file!.path.replaceAll(RegExp(r"\W+"), '.');
   }
 
   /// Override this to customize creating 'Upload-Metadata'
@@ -201,12 +178,11 @@ class TusClient {
     final meta = Map<String, String>.from(metadata ?? {});
 
     if (!meta.containsKey("filename")) {
-      meta["filename"] = p.basename(file.path);
+      meta["filename"] = p.basename(file!.path);
     }
 
     return meta.entries
-        .map((entry) =>
-            entry.key + " " + base64.encode(utf8.encode(entry.value)))
+        .map((entry) => entry.key + " " + base64.encode(utf8.encode(entry.value)))
         .join(",");
   }
 
@@ -218,8 +194,7 @@ class TusClient {
       ..addAll({
         "Tus-Resumable": tusVersion,
       });
-    final response =
-        await client.head(_uploadUrl as Uri, headers: offsetHeaders);
+    final response = await client.head(uploadUrl as Uri, headers: offsetHeaders);
 
     if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(
@@ -228,8 +203,7 @@ class TusClient {
 
     int? serverOffset = _parseOffset(response.headers["upload-offset"]);
     if (serverOffset == null) {
-      throw ProtocolException(
-          "missing upload offset in response for resuming upload");
+      throw ProtocolException("missing upload offset in response for resuming upload");
     }
     return serverOffset;
   }
@@ -239,10 +213,10 @@ class TusClient {
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
     int end = (_offset ?? 0) + maxChunkSize;
-    end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
+    end = end > (fileSize ?? 0) ? fileSize ?? 0 : end;
 
     final result = BytesBuilder();
-    await for (final chunk in file.openRead(start, end)) {
+    await for (final chunk in file!.openRead(start, end)) {
       result.add(chunk);
     }
 

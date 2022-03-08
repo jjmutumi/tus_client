@@ -39,7 +39,7 @@ class TusClient {
 
   // String _fingerprint = "";
 
-  String? _uploadMetadata;
+  // String? _uploadMetadata;
 
   Uri? uploadUrl;
 
@@ -60,7 +60,7 @@ class TusClient {
     this.body,
   }) {
     // _fingerprint = generateFingerprint() ?? "";
-    _uploadMetadata = generateMetadata();
+    // _uploadMetadata = generateMetadata();
   }
 
   /// Whether the client supports resuming
@@ -70,7 +70,7 @@ class TusClient {
   // String get fingerprint => _fingerprint;
 
   /// The 'Upload-Metadata' header sent to server
-  String get uploadMetadata => _uploadMetadata ?? "";
+  // String get uploadMetadata => _uploadMetadata ?? "";
 
   /// Override this method to use a custom Client
   http.Client getHttpClient() => http.Client();

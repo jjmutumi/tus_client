@@ -1,4 +1,4 @@
-import 'dart:convert' show base64, utf8;
+import 'dart:convert' show base64, utf8, jsonDecode, jsonEncode;
 import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 import 'exceptions.dart';
@@ -35,6 +35,8 @@ class TusClient {
   String _fingerprint = "";
 
   String? _uploadMetadata;
+  
+  String? name;
 
   Uri? _uploadUrl;
 
@@ -48,6 +50,7 @@ class TusClient {
     this.url,
     this.file, {
     this.store,
+      this.name,
     this.headers,
     this.metadata = const {},
     this.maxChunkSize = 512 * 1024,
@@ -82,15 +85,26 @@ class TusClient {
         "Upload-Metadata": _uploadMetadata ?? "",
         "Upload-Length": "$_fileSize",
       });
+    
+    final body = 
+      {
+        "upload": {
+          "approach": "tus",
+          "size": _fileSize,
+        },
+        "name": name
+      }
+    ;
 
-    final response = await client.post(url, headers: createHeaders);
+    final response = await client.post(url, headers: createHeaders,body:jsonEncode(body));
     if (!(response.statusCode >= 200 && response.statusCode < 300) &&
         response.statusCode != 404) {
       throw ProtocolException(
           "unexpected status code (${response.statusCode}) while creating upload");
     }
 
-    String urlStr = response.headers["location"] ?? "";
+    String urlStr = jsonDecode(response.body)["upload"]["upload_link"] ?? "";
+    print(urlStr);
     if (urlStr.isEmpty) {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");

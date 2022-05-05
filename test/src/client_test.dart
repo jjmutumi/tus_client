@@ -82,7 +82,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
 
     await client.create();
 
@@ -99,7 +99,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 201, headers: {
-              "location":
+              "Location":
                   "//example.com/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
             }));
 
@@ -118,7 +118,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 201, headers: {
-              "location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
+              "Location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
             }));
 
     await client.create();
@@ -136,7 +136,7 @@ main() {
     final client = MockTusClient(urlWithPort, file);
     when(client.httpClient?.post(urlWithPort, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response("", 201, headers: {
-              "location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
+              "Location": "/tus/1ae64b4f-bd7a-410b-893d-3614a4bd68a6"
             }));
 
     await client.create();
@@ -154,7 +154,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 201,
-            headers: {"location": "$uploadLocation,$uploadLocation"}));
+            headers: {"Location": "$uploadLocation,$uploadLocation"}));
 
     await client.create();
 
@@ -170,7 +170,7 @@ main() {
   test('client_test.TusClient.create().failure.empty.location', () async {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
-        (_) async => http.Response("", 201, headers: {"location": ""}));
+        (_) async => http.Response("", 201, headers: {"Location": ""}));
 
     expectLater(
         () => client.create(),
@@ -219,7 +219,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     when(client.httpClient?.patch(
@@ -260,7 +260,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0,0"}));
     when(client.httpClient?.patch(
@@ -301,7 +301,7 @@ main() {
     final client = MockTusClient(url, file, maxChunkSize: 50);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     when(client.httpClient?.patch(
@@ -326,7 +326,7 @@ main() {
     final client = MockTusClient(url, file, maxChunkSize: 50);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 200, headers: {"upload-offset": "0"}));
     int i = 0;
@@ -352,7 +352,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response("500 Server Error", 500));
 
@@ -368,7 +368,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": ""}));
     when(client.httpClient?.patch(any, headers: anyNamed('headers')))
@@ -387,7 +387,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient?.patch(
@@ -408,7 +408,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient?.patch(
@@ -429,7 +429,7 @@ main() {
     final client = MockTusClient(url, file);
     when(client.httpClient?.post(url, headers: anyNamed('headers'))).thenAnswer(
         (_) async =>
-            http.Response("", 201, headers: {"location": uploadLocation}));
+            http.Response("", 201, headers: {"Location": uploadLocation}));
     when(client.httpClient?.head(any, headers: anyNamed('headers'))).thenAnswer(
         (_) async => http.Response("", 204, headers: {"upload-offset": "0"}));
     when(client.httpClient?.patch(

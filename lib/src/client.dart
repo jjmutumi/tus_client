@@ -90,7 +90,7 @@ class TusClient {
           "unexpected status code (${response.statusCode}) while creating upload");
     }
 
-    String urlStr = response.headers["location"] ?? "";
+    String urlStr = response.headers["Location"] ?? "";
     if (urlStr.isEmpty) {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");

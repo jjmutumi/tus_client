@@ -87,13 +87,13 @@ class TusClient {
     if (!(response.statusCode >= 200 && response.statusCode < 300) &&
         response.statusCode != 404) {
       throw ProtocolException(
-          "unexpected status code (${response.statusCode}) while creating upload");
+          "unexpected status code (${response.statusCode}) while creating upload", response: response);
     }
 
     String urlStr = response.headers["location"] ?? "";
     if (urlStr.isEmpty) {
       throw ProtocolException(
-          "missing upload Uri in response for creating upload");
+          "missing upload Uri in response for creating upload", response: response);
     }
 
     _uploadUrl = _parseUrl(urlStr);
@@ -153,17 +153,17 @@ class TusClient {
       // check if correctly uploaded
       if (!(response.statusCode >= 200 && response.statusCode < 300)) {
         throw ProtocolException(
-            "unexpected status code (${response.statusCode}) while uploading chunk");
+            "unexpected status code (${response.statusCode}) while uploading chunk", response: response);
       }
 
       int? serverOffset = _parseOffset(response.headers["upload-offset"]);
       if (serverOffset == null) {
         throw ProtocolException(
-            "response to PATCH request contains no or invalid Upload-Offset header");
+            "response to PATCH request contains no or invalid Upload-Offset header", response: response);
       }
       if (_offset != serverOffset) {
         throw ProtocolException(
-            "response contains different Upload-Offset value ($serverOffset) than expected ($_offset)");
+            "response contains different Upload-Offset value ($serverOffset) than expected ($_offset)", response: response);
       }
 
       // update progress
@@ -223,13 +223,13 @@ class TusClient {
 
     if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw ProtocolException(
-          "unexpected status code (${response.statusCode}) while resuming upload");
+          "unexpected status code (${response.statusCode}) while resuming upload", response: response);
     }
 
     int? serverOffset = _parseOffset(response.headers["upload-offset"]);
     if (serverOffset == null) {
       throw ProtocolException(
-          "missing upload offset in response for resuming upload");
+          "missing upload offset in response for resuming upload", response: response);
     }
     return serverOffset;
   }

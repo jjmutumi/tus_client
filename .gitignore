@@ -76,5 +76,5 @@ build/
 coverage/
 coverage-html.sh
 tus_test.dart
-/.fvm/flutter_sdk/
+/.fvm/flutter_sdk
 /.fvm/fvm_config.json

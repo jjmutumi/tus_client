@@ -42,7 +42,7 @@ class TusClient {
 
   bool _pauseUpload = false;
 
-  Future? _chunkPatchFuture;
+  Future<http.Response?>? _chunkPatchFuture;
 
   TusClient(
     this.url,
@@ -119,9 +119,9 @@ class TusClient {
 
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
-  upload({
+  Future<void> upload({
     Function(double)? onProgress,
-    Function()? onComplete,
+    Function(http.Response response)? onComplete,
   }) async {
     if (!await resume()) {
       await create();
@@ -151,7 +151,7 @@ class TusClient {
       _chunkPatchFuture = null;
 
       // check if correctly uploaded
-      if (!(response.statusCode >= 200 && response.statusCode < 300)) {
+      if (!(response!.statusCode >= 200 && response.statusCode < 300)) {
         throw ProtocolException(
             "unexpected status code (${response.statusCode}) while uploading chunk");
       }
@@ -174,7 +174,7 @@ class TusClient {
       if (_offset == totalBytes) {
         this.onComplete();
         if (onComplete != null) {
-          onComplete();
+          onComplete(response);
         }
       }
     }
@@ -183,7 +183,7 @@ class TusClient {
   /// Pause the current upload
   pause() {
     _pauseUpload = true;
-    _chunkPatchFuture?.timeout(Duration.zero, onTimeout: () {});
+    _chunkPatchFuture?.timeout(Duration.zero, onTimeout: () => null);
   }
 
   /// Actions to be performed after a successful upload

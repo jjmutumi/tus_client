@@ -1,7 +1,7 @@
 import 'package:cross_file/cross_file.dart' show XFile;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:tus_client/tus_client.dart';
+import 'package:tus_client_dart/tus_client_dart.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void main() {

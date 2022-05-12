@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:tus_client/tus_client.dart';
+import 'package:tus_client_dart/tus_client_dart.dart';
 import 'client_test.mocks.dart';
 
 class MockTusClient extends TusClient {

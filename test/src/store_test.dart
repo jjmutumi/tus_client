@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:tus_client/tus_client.dart';
+import 'package:tus_client_dart/tus_client_dart.dart';
 
 main() {
   final fingerprint = "test";

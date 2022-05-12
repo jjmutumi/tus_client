@@ -17,7 +17,7 @@ import 'package:mockito/mockito.dart' as _i1;
 
 class _FakeResponse extends _i1.Fake implements _i2.Response {}
 
-class _FakeUint8List extends _i1.Fake implements _i3.Uint8List {}
+class _FakeUint8List extends _i1.Fake implements List {}
 
 class _FakeStreamedResponse extends _i1.Fake implements _i4.StreamedResponse {}
 

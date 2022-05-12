@@ -1,12 +1,12 @@
 # A tus client
 
-[![Pub Version](https://img.shields.io/pub/v/tus_client)](https://pub.dev/packages/tus_client)
-[![Build Status](https://travis-ci.org/jjmutumi/tus_client.svg?branch=master)](https://travis-ci.org/jjmutumi/tus_client)
-[![codecov](https://codecov.io/gh/jjmutumi/tus_client/branch/master/graph/badge.svg)](https://codecov.io/gh/jjmutumi/tus_client)
+[![Pub Version](https://img.shields.io/pub/v/tus_client_dart)](https://pub.dev/packages/tus_client_dart)
+[![Build Status](https://app.travis-ci.com/tomassasovsky/tus_client.svg?branch=master)](https://travis-ci.org/tomassasovsky/tus_client)
 
 ---
 
 A tus client in pure dart. [Resumable uploads using tus protocol](https://tus.io/)
+Forked from [tus_client](https://pub.dev/packages/tus_client)
 
 > **tus** is a protocol based on HTTP for *resumable file uploads*. Resumable
 > means that an upload can be interrupted at any moment and can be resumed without
@@ -142,8 +142,10 @@ await client.upload(
 
 ## Example
 
-For an example of usage in a Flutter app (using file picker) see: [/example](https://github.com/jjmutumi/tus_client/tree/master/example/lib/main.dart)
+For an example of usage in a Flutter app (using file picker) see: [/example](https://github.com/tomassasovsky/tus_client/tree/master/example/lib/main.dart)
 
 ## Maintainers
 
-* [Joseph N. Mutumi](https://github.com/jjmutumi)
+* [Nazareno Cavazzon](https://github.com/NazarenoCavazzon)
+* [Jorge Rincon](https://github.com/jorger5)
+* [Tomás Sasovsky](https://github.com/tomassasovsky)

@@ -165,7 +165,7 @@ class TusClient {
             "unexpected status code (${response.statusCode}) while uploading chunk");
       }
 
-      int? serverOffset = _parseOffset(response.headers["upload-offset"]);
+      int? serverOffset = _parseOffset(response.headers.value("upload-offset"));
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
@@ -232,7 +232,9 @@ class TusClient {
           "unexpected status code (${response.statusCode}) while resuming upload");
     }
 
-    int? serverOffset = _parseOffset(response.headers.value("upload-offset"));
+    final offset = response.headers.value("upload-offset");
+
+    int? serverOffset = _parseOffset(offset);
     if (serverOffset == null) {
       throw ProtocolException(
           "missing upload offset in response for resuming upload");

@@ -45,14 +45,12 @@ class TusClient {
 
   Future? _chunkPatchFuture;
 
-  TusClient(
-    this.url,
-    this.file, {
-    this.store,
-    this.headers,
-    this.metadata = const {},
-    this.maxChunkSize = 512 * 1024,
-  }) {
+  TusClient(this.url, this.file,
+      {this.store,
+      this.headers,
+      this.metadata = const {},
+      this.maxChunkSize = 512 * 1024 // 512KB,
+      }) {
     _fingerprint = generateFingerprint() ?? "";
     _uploadMetadata = generateMetadata();
   }
@@ -151,7 +149,7 @@ class TusClient {
         data: await _getData(),
         onSendProgress: (int sent, int total) {
           if (onProgress != null) {
-            onProgress(min(1.0, sent / total));
+            onProgress(((sent + (_offset ?? 0)) / totalBytes) * 100);
           }
         },
       );
@@ -168,10 +166,13 @@ class TusClient {
       final offset = response.headers.value("upload-offset");
 
       int? serverOffset = _parseOffset(offset);
+
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
       }
+
+      _offset = serverOffset;
 
       if (_offset == totalBytes) {
         this.onComplete();
@@ -244,7 +245,7 @@ class TusClient {
 
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
-    int end = (_offset ?? 0) + maxChunkSize;
+    int end = (_offset ?? 0) + (maxChunkSize / 4.571556501348478).round();
     end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
 
     final result = BytesBuilder();
@@ -252,10 +253,9 @@ class TusClient {
       result.add(chunk);
     }
 
-    final bytesRead = min(maxChunkSize, result.length);
-    _offset = (_offset ?? 0) + bytesRead;
+    final response = result.takeBytes();
 
-    return result.takeBytes();
+    return response;
   }
 
   int? _parseOffset(String? offset) {

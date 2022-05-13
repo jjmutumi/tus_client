@@ -90,25 +90,9 @@ class _UploadPageState extends State<UploadPage> {
                               // Create a client
                               print("Create a client");
                               _client = TusClient(
-                                Uri.https(
-                                  'dev.sportsvisio-api.com',
-                                  '/upload/device/',
-                                ),
+                                Uri.parse("https://master.tus.io/files/"),
                                 _file,
                                 store: TusMemoryStore(),
-                                headers: {
-                                  'accept': 'application/json',
-                                  'Content-Type': 'application/json',
-                                  'Authorization':
-                                      'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwZjQ3Y2MwMC04ZWZmLTQxZmEtOWY5YS0zNDUxNzU5NDE4OTQiLCJpYXQiOjE2NTIyMTg2MDQsImV4cCI6MTY4Mzc3NjIwNH0.hRiKdey9fTMF89DHutzjz30YBOcsJSEIKv9XZJjRFYE',
-                                },
-                                metadata: {
-                                  'name': _file.name,
-                                  'deviceId':
-                                      'd03359c1-b246-4020-a0d2-7d08f889b678',
-                                  'gameId':
-                                      'd03359c1-b246-4020-a0d2-7d08f889b678',
-                                },
                               );
 
                               print("Starting upload");

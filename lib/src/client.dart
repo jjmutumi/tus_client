@@ -172,10 +172,6 @@ class TusClient {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
       }
-      if (_offset != serverOffset) {
-        throw ProtocolException(
-            "response contains different Upload-Offset value ($serverOffset) than expected ($_offset)");
-      }
 
       if (_offset == totalBytes) {
         this.onComplete();

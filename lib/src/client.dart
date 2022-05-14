@@ -121,12 +121,15 @@ class TusClient {
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
   upload({
-    Function(double)? onProgress,
+    Function(double, Duration)? onProgress,
     Function()? onComplete,
   }) async {
     if (!await resume()) {
       await create();
     }
+
+    // The start time of the upload
+    final dateTime = DateTime.now();
 
     // get offset from server
     _offset = await _getOffset();
@@ -149,7 +152,23 @@ class TusClient {
         data: await _getData(),
         onSendProgress: (int sent, int total) {
           if (onProgress != null) {
-            onProgress(((sent + (_offset ?? 0)) / totalBytes) * 100);
+            // Total byte sent
+            final totalSent = (sent + (_offset ?? 0));
+
+            // The time elapsed since the start of the upload
+            final uploadDuration = DateTime.now().difference(dateTime);
+
+            // The total upload speed in bytes/ms
+            final uploadSpeed = totalSent / uploadDuration.inMilliseconds;
+
+            // The data that hasn't been sent yet
+            final remainData = totalBytes - totalSent;
+
+            // The time remaining to finish the upload
+            final estimate = Duration(
+              milliseconds: (remainData / uploadSpeed).round(),
+            );
+            onProgress((totalSent / totalBytes) * 100, estimate);
           }
         },
       );

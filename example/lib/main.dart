@@ -28,6 +28,7 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage> {
   double _progress = 0;
+  Duration _estimate = Duration();
   XFile _file;
   TusClient _client;
   Uri _fileUrl;
@@ -101,9 +102,12 @@ class _UploadPageState extends State<UploadPage> {
                                   print("Completed!");
                                   setState(() => _fileUrl = _client.uploadUrl);
                                 },
-                                onProgress: (progress) {
+                                onProgress: (progress, estimate) {
                                   print("Progress: $progress");
-                                  setState(() => _progress = progress);
+                                  setState(() {
+                                    _estimate = estimate;
+                                    _progress = progress;
+                                  });
                                 },
                               );
                             },
@@ -146,7 +150,8 @@ class _UploadPageState extends State<UploadPage> {
                   margin: const EdgeInsets.all(8),
                   padding: const EdgeInsets.all(1),
                   width: double.infinity,
-                  child: Text("Progress: ${_progress.toStringAsFixed(1)}%"),
+                  child: Text(
+                      "Progress: ${_progress.toStringAsFixed(1)}%, estimated time: ${_printDuration(_estimate)}"),
                 ),
               ],
             ),
@@ -168,6 +173,13 @@ class _UploadPageState extends State<UploadPage> {
         ),
       ),
     );
+  }
+
+  String _printDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    final twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
   /// Copy file to temporary directory before uploading

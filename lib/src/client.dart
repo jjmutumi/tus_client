@@ -1,11 +1,11 @@
 import 'dart:convert' show base64, utf8;
-import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
+import 'package:dio/dio.dart';
+
 import 'exceptions.dart';
 import 'store.dart';
 
 import 'package:cross_file/cross_file.dart' show XFile;
-import 'package:http/http.dart' as http;
 import "package:path/path.dart" as p;
 
 /// This class is used for creating or resuming uploads.
@@ -50,7 +50,7 @@ class TusClient {
     this.store,
     this.headers,
     this.metadata = const {},
-    this.maxChunkSize = 512 * 1024,
+    this.maxChunkSize = 524288,
   }) {
     _fingerprint = generateFingerprint() ?? "";
     _uploadMetadata = generateMetadata();
@@ -69,28 +69,30 @@ class TusClient {
   String get uploadMetadata => _uploadMetadata ?? "";
 
   /// Override this method to use a custom Client
-  http.Client getHttpClient() => http.Client();
+  Dio getDioClient() => Dio();
 
   /// Create a new [upload] throwing [ProtocolException] on server error
   create() async {
     _fileSize = await file.length();
 
-    final client = getHttpClient();
     final createHeaders = Map<String, String>.from(headers ?? {})
       ..addAll({
         "Tus-Resumable": tusVersion,
         "Upload-Metadata": _uploadMetadata ?? "",
         "Upload-Length": "$_fileSize",
       });
+    final client = getDioClient()..options.headers.addAll(createHeaders);
 
-    final response = await client.post(url, headers: createHeaders);
-    if (!(response.statusCode >= 200 && response.statusCode < 300) &&
+    final response = await client.post(url.toString());
+
+    if (!((response.statusCode ?? 400) >= 200 &&
+            (response.statusCode ?? 400) < 300) &&
         response.statusCode != 404) {
       throw ProtocolException(
           "unexpected status code (${response.statusCode}) while creating upload");
     }
 
-    String urlStr = response.headers["location"] ?? "";
+    String urlStr = response.headers.value("Location") ?? "";
     if (urlStr.isEmpty) {
       throw ProtocolException(
           "missing upload Uri in response for creating upload");
@@ -120,12 +122,15 @@ class TusClient {
   /// Start or resume an upload in chunks of [maxChunkSize] throwing
   /// [ProtocolException] on server error
   upload({
-    Function(double)? onProgress,
+    Function(double, Duration)? onProgress,
     Function()? onComplete,
   }) async {
     if (!await resume()) {
       await create();
     }
+
+    // We start a stopwatch to calculate the upload speed
+    final uploadStopwatch = Stopwatch()..start();
 
     // get offset from server
     _offset = await _getOffset();
@@ -133,7 +138,7 @@ class TusClient {
     int totalBytes = _fileSize as int;
 
     // start upload
-    final client = getHttpClient();
+    final client = getDioClient();
 
     while (!_pauseUpload && (_offset ?? 0) < totalBytes) {
       final uploadHeaders = Map<String, String>.from(headers ?? {})
@@ -142,12 +147,34 @@ class TusClient {
           "Upload-Offset": "$_offset",
           "Content-Type": "application/offset+octet-stream"
         });
+      client.options.headers.addAll(uploadHeaders);
       _chunkPatchFuture = client.patch(
-        _uploadUrl as Uri,
-        headers: uploadHeaders,
-        body: await _getData(),
+        (_uploadUrl as Uri).toString(),
+        data: await _getData(),
+        onSendProgress: (int sent, int total) {
+          if (onProgress != null) {
+            // Total byte sent
+            final totalSent = (sent + (_offset ?? 0));
+
+            // The total upload speed in bytes/ms
+            final uploadSpeed = totalSent / uploadStopwatch.elapsedMilliseconds;
+
+            // The data that hasn't been sent yet
+            final remainData = totalBytes - totalSent;
+
+            // The time remaining to finish the upload
+            final estimate = Duration(
+              milliseconds: (remainData / uploadSpeed).round(),
+            );
+
+            final progress = totalSent / totalBytes * 100;
+
+            onProgress(progress.clamp(0, 100), estimate);
+          }
+        },
       );
       final response = await _chunkPatchFuture;
+
       _chunkPatchFuture = null;
 
       // check if correctly uploaded
@@ -156,22 +183,19 @@ class TusClient {
             "unexpected status code (${response.statusCode}) while uploading chunk");
       }
 
-      int? serverOffset = _parseOffset(response.headers["upload-offset"]);
+      final offset = response.headers.value("upload-offset");
+
+      int? serverOffset = _parseOffset(offset);
+
       if (serverOffset == null) {
         throw ProtocolException(
             "response to PATCH request contains no or invalid Upload-Offset header");
       }
-      if (_offset != serverOffset) {
-        throw ProtocolException(
-            "response contains different Upload-Offset value ($serverOffset) than expected ($_offset)");
-      }
 
-      // update progress
-      if (onProgress != null) {
-        onProgress((_offset ?? 0) / totalBytes * 100);
-      }
+      _offset = serverOffset;
 
       if (_offset == totalBytes) {
+        uploadStopwatch.stop();
         this.onComplete();
         if (onComplete != null) {
           onComplete();
@@ -212,21 +236,25 @@ class TusClient {
 
   /// Get offset from server throwing [ProtocolException] on error
   Future<int> _getOffset() async {
-    final client = getHttpClient();
+    final client = getDioClient();
 
     final offsetHeaders = Map<String, String>.from(headers ?? {})
       ..addAll({
         "Tus-Resumable": tusVersion,
       });
-    final response =
-        await client.head(_uploadUrl as Uri, headers: offsetHeaders);
+    client.options.headers.addAll(offsetHeaders);
+    final response = await client.head((_uploadUrl as Uri).toString());
 
-    if (!(response.statusCode >= 200 && response.statusCode < 300)) {
+    if (!((response.statusCode ?? 400) >= 200 &&
+            (response.statusCode ?? 400) < 300) &&
+        response.statusCode != 404) {
       throw ProtocolException(
           "unexpected status code (${response.statusCode}) while resuming upload");
     }
 
-    int? serverOffset = _parseOffset(response.headers["upload-offset"]);
+    final offset = response.headers.value("upload-offset");
+
+    int? serverOffset = _parseOffset(offset);
     if (serverOffset == null) {
       throw ProtocolException(
           "missing upload offset in response for resuming upload");
@@ -238,7 +266,11 @@ class TusClient {
 
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
-    int end = (_offset ?? 0) + maxChunkSize;
+
+    // The server uses an offset 4.571... bigger than the number we pass to it,
+    // so we need to divide it by 4.571...
+    int end = (_offset ?? 0) + (maxChunkSize / 4.571556501348478).round();
+
     end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
 
     final result = BytesBuilder();
@@ -246,10 +278,9 @@ class TusClient {
       result.add(chunk);
     }
 
-    final bytesRead = min(maxChunkSize, result.length);
-    _offset = (_offset ?? 0) + bytesRead;
+    final response = result.takeBytes();
 
-    return result.takeBytes();
+    return response;
   }
 
   int? _parseOffset(String? offset) {

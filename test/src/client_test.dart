@@ -29,7 +29,6 @@ class MockTusClient extends TusClient {
     httpClient = MockClient();
   }
 
-  @override
   http.Client getHttpClient() => httpClient as http.Client;
 }
 
@@ -232,7 +231,7 @@ main() {
     bool success = false;
     double? progress;
     await client.upload(
-        onComplete: () => success = true, onProgress: (p) => progress = p);
+        onComplete: () => success = true, onProgress: (p, e) => progress = p);
 
     expect(success, isTrue);
     expect(progress, equals(100));
@@ -273,7 +272,9 @@ main() {
     bool success = false;
     double? progress;
     await client.upload(
-        onComplete: () => success = true, onProgress: (p) => progress = p);
+      onComplete: () => success = true,
+      onProgress: (p, e) => progress = p,
+    );
 
     expect(success, isTrue);
     expect(progress, equals(100));
@@ -316,7 +317,7 @@ main() {
     bool success = false;
     double? progress;
     await client.upload(
-        onComplete: () => success = true, onProgress: (p) => progress = p);
+        onComplete: () => success = true, onProgress: (p, e) => progress = p);
 
     expect(success, isFalse);
     expect(progress, equals(50));
@@ -342,7 +343,7 @@ main() {
     bool success = false;
     double? progress;
     await client.upload(
-        onComplete: () => success = true, onProgress: (p) => progress = p);
+        onComplete: () => success = true, onProgress: (p, e) => progress = p);
 
     expect(success, isTrue);
     expect(progress, equals(100));

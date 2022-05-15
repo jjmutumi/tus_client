@@ -1,5 +1,4 @@
 import 'dart:convert' show base64, utf8;
-import 'dart:math' show min;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 import 'package:dio/dio.dart';
 
@@ -45,12 +44,14 @@ class TusClient {
 
   Future? _chunkPatchFuture;
 
-  TusClient(this.url, this.file,
-      {this.store,
-      this.headers,
-      this.metadata = const {},
-      this.maxChunkSize = 512 * 1024 // 512KB,
-      }) {
+  TusClient(
+    this.url,
+    this.file, {
+    this.store,
+    this.headers,
+    this.metadata = const {},
+    this.maxChunkSize = 524288,
+  }) {
     _fingerprint = generateFingerprint() ?? "";
     _uploadMetadata = generateMetadata();
   }
@@ -128,8 +129,8 @@ class TusClient {
       await create();
     }
 
-    // The start time of the upload
-    final dateTime = DateTime.now();
+    // We start a stopwatch to calculate the upload speed
+    final uploadStopwatch = Stopwatch()..start();
 
     // get offset from server
     _offset = await _getOffset();
@@ -156,7 +157,7 @@ class TusClient {
             final totalSent = (sent + (_offset ?? 0));
 
             // The time elapsed since the start of the upload
-            final uploadDuration = DateTime.now().difference(dateTime);
+            final uploadDuration = uploadStopwatch.elapsed;
 
             // The total upload speed in bytes/ms
             final uploadSpeed = totalSent / uploadDuration.inMilliseconds;
@@ -194,6 +195,7 @@ class TusClient {
       _offset = serverOffset;
 
       if (_offset == totalBytes) {
+        uploadStopwatch.stop();
         this.onComplete();
         if (onComplete != null) {
           onComplete();

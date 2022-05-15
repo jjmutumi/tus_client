@@ -156,11 +156,8 @@ class TusClient {
             // Total byte sent
             final totalSent = (sent + (_offset ?? 0));
 
-            // The time elapsed since the start of the upload
-            final uploadDuration = uploadStopwatch.elapsed;
-
             // The total upload speed in bytes/ms
-            final uploadSpeed = totalSent / uploadDuration.inMilliseconds;
+            final uploadSpeed = totalSent / uploadStopwatch.elapsedMilliseconds;
 
             // The data that hasn't been sent yet
             final remainData = totalBytes - totalSent;
@@ -169,7 +166,10 @@ class TusClient {
             final estimate = Duration(
               milliseconds: (remainData / uploadSpeed).round(),
             );
-            onProgress((totalSent / totalBytes) * 100, estimate);
+
+            final progress = totalSent / totalBytes * 100;
+
+            onProgress(progress.clamp(0, 100), estimate);
           }
         },
       );
@@ -266,7 +266,11 @@ class TusClient {
 
   Future<Uint8List> _getData() async {
     int start = _offset ?? 0;
+
+    // The server uses an offset 4.571... bigger than the number we pass to it,
+    // so we need to divide it by 4.571...
     int end = (_offset ?? 0) + (maxChunkSize / 4.571556501348478).round();
+
     end = end > (_fileSize ?? 0) ? _fileSize ?? 0 : end;
 
     final result = BytesBuilder();

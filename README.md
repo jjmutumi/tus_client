@@ -47,8 +47,8 @@ await client.upload(
         // Prints the uploaded file URL
         print(client.uploadUrl.toString());
     },
-    onProgress: (progress) {
-        print("Progress: $progress");
+    onProgress: (double progress, Duration estimate) {
+        print("Progress: $progress, Estimated time: ${estimate.inSeconds}");
     },
 );
 ```
@@ -60,18 +60,19 @@ You need to add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  tus_client: ^1.0.2
-  tus_client_file_store: ^0.0.3
+  tus_client_dart: ^2.0.2
 ```
 
 ```dart
 import 'package:path_provider/path_provider.dart';
-import 'package:tus_client_file_store/tus_client_file_store.dart' show TusFileStore;
 import 'package:path/path.dart' as p;
 
-// Directory the current uploads will be saved in
-final tempDir = (await getTemporaryDirectory()).path;
-final tempDirectory = Directory(p.join(tempDir, "tus-uploads"));
+//creates temporal directory to store the upload progress
+final tempDir = await getTemporaryDirectory();
+final tempDirectory = Directory('${tempDir.path}/${gameId}_uploads');
+if (!tempDirectory.existsSync()) {
+    tempDirectory.createSync(recursive: true);
+}
 
 // Create a client
 final client = TusClient(
@@ -81,6 +82,7 @@ final client = TusClient(
 );
 
 // Start upload
+// Don't forget to delete the tempDirectory
 await client.upload();
 ```
 
@@ -134,8 +136,8 @@ await client.upload(
     onComplete: () {
         print("Complete!");
     },
-    onProgress: (progress) {
-        print("Progress: $progress");
+    onProgress: (double progress, Duration estimate) {
+        print("Progress: $progress, Estimated time: ${estimate.inSeconds}");
     },
 );
 ```

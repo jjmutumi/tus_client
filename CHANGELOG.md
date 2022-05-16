@@ -1,3 +1,9 @@
+## [2.1.0] - HTTP Package updated
+
+- Now the package uses Dio to manage HTTP Requests.
+- Estimated time added.
+- Chunk size issue with big files and names fixed.
+
 ## [2.0.1] - Added Persistent Store
 
 - Users can now use TusFileStore to create persistent state of uploads.

@@ -1,3 +1,7 @@
+## [2.2.0] - Use http client again
+
+- We don't use Dio anymore
+
 ## [2.1.0] - HTTP Package updated
 
 - Now the package uses Dio to manage HTTP Requests.

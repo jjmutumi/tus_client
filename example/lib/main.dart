@@ -154,7 +154,7 @@ class _UploadPageState extends State<UploadPage> {
               onTap: _progress != 100
                   ? null
                   : () async {
-                      await launch(_fileUrl.toString());
+                      await launchUrl(_fileUrl);
                     },
               child: Container(
                 color: _progress == 100 ? Colors.green : Colors.grey,

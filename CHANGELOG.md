@@ -1,3 +1,8 @@
+## [1.1.0] - Migrating to Dart 3
+
+* Migrating to Dart 3
+* Updating dependencies
+
 ## [1.0.2] - Fixed issue with not parsing the http port number 
 
 * Fixed issue with not parsing the http port number 
